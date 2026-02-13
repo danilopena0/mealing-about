@@ -1,0 +1,18 @@
+{
+  "name": "mealing-about",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter @mealing-about/mobile start",
+    "dev:web": "pnpm --filter @mealing-about/mobile start:web",
+    "build": "pnpm --filter @mealing-about/api build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "~5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
