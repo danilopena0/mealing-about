@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +9,16 @@ export default function HomeScreen() {
   const router = useRouter();
   const { location, errorMsg, isLoading, permissionStatus, refreshLocation } =
     useLocation();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleTextSearch = () => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) return;
+    router.push({
+      pathname: '/restaurants',
+      params: { query: trimmed },
+    });
+  };
 
   const handleSearchPress = async () => {
     if (!location) {
@@ -130,9 +141,34 @@ export default function HomeScreen() {
           </Text>
         </Pressable>
 
-        <Text style={styles.footerText}>
-          Or manually enter a restaurant address
-        </Text>
+        <View style={styles.dividerContainer}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or search by name / address</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <View style={styles.searchInputContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="e.g. Pizza Hut near Times Square"
+            placeholderTextColor="#9ca3af"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onSubmitEditing={handleTextSearch}
+            returnKeyType="search"
+          />
+          <Pressable
+            style={({ pressed }) => [
+              styles.searchInputButton,
+              pressed && styles.searchInputButtonPressed,
+              !searchQuery.trim() && styles.searchInputButtonDisabled,
+            ]}
+            onPress={handleTextSearch}
+            disabled={!searchQuery.trim()}
+          >
+            <Ionicons name="search" size={20} color="#fff" />
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -246,10 +282,50 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  footerText: {
-    marginTop: 16,
-    fontSize: 14,
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e5e7eb',
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    fontSize: 13,
     color: '#9ca3af',
-    textAlign: 'center',
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    color: '#111827',
+    backgroundColor: '#f9fafb',
+  },
+  searchInputButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 10,
+    backgroundColor: '#22c55e',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchInputButtonPressed: {
+    backgroundColor: '#16a34a',
+  },
+  searchInputButtonDisabled: {
+    backgroundColor: '#86efac',
   },
 });

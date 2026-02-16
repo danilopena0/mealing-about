@@ -1,6 +1,7 @@
 import type {
   Restaurant,
   SearchRestaurantsRequest,
+  SearchByTextRequest,
   AnalyzeMenuRequest,
   AnalyzeMenuResponse,
 } from '@/types';
@@ -46,6 +47,15 @@ export async function searchRestaurants(
   request: SearchRestaurantsRequest
 ): Promise<Restaurant[]> {
   return fetchApi<Restaurant[]>('/search-restaurants', {
+    method: 'POST',
+    body: JSON.stringify(request),
+  });
+}
+
+export async function searchByText(
+  request: SearchByTextRequest
+): Promise<Restaurant[]> {
+  return fetchApi<Restaurant[]>('/search-by-text', {
     method: 'POST',
     body: JSON.stringify(request),
   });

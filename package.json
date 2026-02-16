@@ -6,7 +6,8 @@
     "dev:web": "pnpm --filter @mealing-about/mobile start:web",
     "build": "pnpm --filter @mealing-about/api build",
     "lint": "pnpm -r lint",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
   },
   "devDependencies": {
     "typescript": "~5.3.3"

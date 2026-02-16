@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { searchRestaurants } from '@/lib/api';
+import { searchRestaurants, searchByText } from '@/lib/api';
 import type { Restaurant } from '@/types';
 
 export default function RestaurantsScreen() {
@@ -18,6 +18,7 @@ export default function RestaurantsScreen() {
   const params = useLocalSearchParams<{
     latitude: string;
     longitude: string;
+    query: string;
   }>();
 
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -27,6 +28,7 @@ export default function RestaurantsScreen() {
 
   const latitude = parseFloat(params.latitude || '0');
   const longitude = parseFloat(params.longitude || '0');
+  const query = params.query;
 
   const fetchRestaurants = async (showRefresh = false) => {
     if (showRefresh) {
@@ -37,11 +39,9 @@ export default function RestaurantsScreen() {
     setError(null);
 
     try {
-      const results = await searchRestaurants({
-        latitude,
-        longitude,
-        radius: 1500,
-      });
+      const results = query
+        ? await searchByText({ query })
+        : await searchRestaurants({ latitude, longitude, radius: 1500 });
       setRestaurants(results);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load restaurants');
@@ -52,10 +52,10 @@ export default function RestaurantsScreen() {
   };
 
   useEffect(() => {
-    if (latitude && longitude) {
+    if (query || (latitude && longitude)) {
       fetchRestaurants();
     }
-  }, [latitude, longitude]);
+  }, [latitude, longitude, query]);
 
   const handleRestaurantPress = (restaurant: Restaurant) => {
     router.push({
@@ -131,7 +131,9 @@ export default function RestaurantsScreen() {
     return (
       <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#22c55e" />
-        <Text style={styles.loadingText}>Finding restaurants near you...</Text>
+        <Text style={styles.loadingText}>
+          {query ? 'Searching restaurants...' : 'Finding restaurants near you...'}
+        </Text>
       </View>
     );
   }

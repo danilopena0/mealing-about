@@ -16,6 +16,7 @@ export interface PlaceResult {
   opening_hours?: {
     open_now: boolean;
   };
+  formatted_address?: string;
   photos?: Array<{
     photo_reference: string;
   }>;
@@ -32,7 +33,7 @@ export interface Restaurant {
   photoUrl?: string;
 }
 
-function calculateDistance(
+export function calculateDistance(
   lat1: number,
   lon1: number,
   lat2: number,
@@ -52,7 +53,7 @@ function calculateDistance(
   return R * c;
 }
 
-function getPhotoUrl(photoReference: string): string {
+export function getPhotoUrl(photoReference: string): string {
   return `${PLACES_API_BASE}/photo?maxwidth=400&photo_reference=${photoReference}&key=${GOOGLE_PLACES_API_KEY}`;
 }
 
@@ -91,6 +92,39 @@ export async function searchNearbyRestaurants(
       place.geometry.location.lat,
       place.geometry.location.lng
     ),
+    rating: place.rating,
+    priceLevel: place.price_level,
+    isOpen: place.opening_hours?.open_now,
+    photoUrl: place.photos?.[0]
+      ? getPhotoUrl(place.photos[0].photo_reference)
+      : undefined,
+  }));
+}
+
+export async function searchByText(query: string): Promise<Restaurant[]> {
+  const url = new URL(`${PLACES_API_BASE}/textsearch/json`);
+  url.searchParams.set('query', query);
+  url.searchParams.set('type', 'restaurant');
+  url.searchParams.set('key', GOOGLE_PLACES_API_KEY);
+
+  const response = await fetch(url.toString());
+
+  if (!response.ok) {
+    throw new Error(`Google Places API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+    throw new Error(`Google Places API error: ${data.status}`);
+  }
+
+  const results: PlaceResult[] = data.results || [];
+
+  return results.map((place) => ({
+    placeId: place.place_id,
+    name: place.name,
+    address: place.formatted_address || place.vicinity,
     rating: place.rating,
     priceLevel: place.price_level,
     isOpen: place.opening_hours?.open_now,

@@ -46,6 +46,10 @@ export interface SearchRestaurantsRequest {
   radius?: number;
 }
 
+export interface SearchByTextRequest {
+  query: string;
+}
+
 export type AnalyzerProvider = 'perplexity' | 'anthropic';
 
 export interface AnalyzeMenuRequest {

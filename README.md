@@ -15,29 +15,63 @@ A mobile app that helps users identify vegan, vegetarian, and gluten-free option
 
 ### Prerequisites
 
-- Node.js 18+
-- pnpm 9+
-- Expo Go app on your phone (for mobile testing)
+- **Node.js** >= 18
+- **pnpm** 9+
+- **Expo Go** app on your phone (for mobile testing)
 
-### Setup
+### 1. Install Node.js (WSL)
+
+If you don't have Node.js set up in WSL yet, install it via [nvm](https://github.com/nvm-sh/nvm):
 
 ```bash
-# Install dependencies
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+source ~/.bashrc
+nvm install 18
+nvm use 18
+```
+
+### 2. Install pnpm via Corepack
+
+```bash
+corepack enable
+corepack prepare pnpm@9.0.0 --activate
+```
+
+### 3. Install dependencies
+
+```bash
 pnpm install
+```
 
-# Copy environment variables
+### 4. Set up environment variables
+
+```bash
 cp .env.example .env
-# Edit .env with your API keys
+```
 
+Edit `.env` and fill in your API keys (see [Environment Variables](#environment-variables) below).
+
+### 5. Start development
+
+```bash
 # Start the Expo development server
 pnpm dev
 
 # Or start web version
 pnpm dev:web
 
-# Start API locally
+# Start API locally (in a separate terminal)
 pnpm --filter @mealing-about/api dev
 ```
+
+### WSL-Specific Notes
+
+- **Expo on WSL**: The dev server runs in WSL but your phone needs to reach it. If direct connection doesn't work, use tunnel mode:
+  ```bash
+  cd apps/mobile && npx expo start --tunnel
+  ```
+- **Port forwarding**: WSL2 usually auto-forwards ports to Windows. If `localhost` doesn't work from your Windows browser, check your Windows firewall settings.
+- **File watcher performance**: WSL2 has limited inotify support for files on the Windows filesystem (`/mnt/c/`). If hot reload is slow or unreliable, consider cloning the repo inside the WSL filesystem instead (e.g. `~/projects/mealing-about`).
 
 ## Environment Variables
 
