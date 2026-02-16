@@ -56,6 +56,9 @@ pnpm-debug.log*
 .claude/
 .claude*
 
+# Project notes
+NEXT_STEPS.md
+
 # Python
 venv/
 __pycache__/
