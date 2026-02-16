@@ -71,7 +71,22 @@ pnpm --filter @mealing-about/api dev
   cd apps/mobile && npx expo start --tunnel
   ```
 - **Port forwarding**: WSL2 usually auto-forwards ports to Windows. If `localhost` doesn't work from your Windows browser, check your Windows firewall settings.
-- **File watcher performance**: WSL2 has limited inotify support for files on the Windows filesystem (`/mnt/c/`). If hot reload is slow or unreliable, consider cloning the repo inside the WSL filesystem instead (e.g. `~/projects/mealing-about`).
+- **File watcher performance**: WSL2 has limited inotify support for files on the Windows filesystem (`/mnt/c/`). If hot reload is slow or unreliable, consider cloning the repo inside the WSL filesystem instead (e.g. `~/mealing-about`).
+
+#### Recommended: Move Repo to WSL Filesystem
+
+Running the project from `/mnt/c/` (the Windows filesystem) is significantly slower due to cross-filesystem I/O. For much faster bundling and hot reload, copy the repo into WSL's native filesystem:
+
+```bash
+cp -r /mnt/c/Users/ukule/PycharmProjects/mealing-about ~/mealing-about
+cd ~/mealing-about
+pnpm install
+pnpm dev:web
+```
+
+You can still access it from Windows:
+- **Browser**: `localhost:8081` works as normal
+- **IDE**: Open the WSL path via `\\wsl$\Ubuntu\home\ukule\mealing-about`
 
 ## Environment Variables
 
