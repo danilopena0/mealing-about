@@ -42,7 +42,7 @@ export async function analyzeWithPerplexity(menuText: string): Promise<MenuItem[
     body: JSON.stringify({
       model: 'sonar',
       messages,
-      max_tokens: 4096,
+      max_tokens: 8000,
       temperature: 0.1,
     }),
   });
@@ -64,6 +64,14 @@ export async function analyzeWithPerplexity(menuText: string): Promise<MenuItem[
   const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, content];
   const jsonStr = jsonMatch[1]?.trim() || content.trim();
 
-  const parsed = JSON.parse(jsonStr);
+  let parsed: { items: MenuItem[] };
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch (e) {
+    throw new Error(
+      `Failed to parse Perplexity response as JSON (response may have been truncated). ` +
+      `Length: ${jsonStr.length}. Original error: ${e instanceof Error ? e.message : String(e)}`
+    );
+  }
   return parsed.items;
 }

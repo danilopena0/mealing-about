@@ -21,6 +21,9 @@ interface AnalyzeResponse {
   provider?: AnalyzerProvider;
 }
 
+// Keep extracted text under this limit to avoid overflowing the AI's output token budget
+const MAX_MENU_TEXT_LENGTH = 12_000;
+
 async function fetchMenuFromUrl(url: string): Promise<string> {
   const response = await fetch(url);
 
@@ -32,13 +35,17 @@ async function fetchMenuFromUrl(url: string): Promise<string> {
 
   if (contentType.includes('text/html')) {
     const html = await response.text();
-    // Basic HTML to text extraction - strip tags
+    // Strip scripts, styles, and tags; collapse whitespace
     const text = html
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
       .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
+
+    if (text.length > MAX_MENU_TEXT_LENGTH) {
+      return text.slice(0, MAX_MENU_TEXT_LENGTH);
+    }
     return text;
   }
 
@@ -46,7 +53,8 @@ async function fetchMenuFromUrl(url: string): Promise<string> {
     throw new Error('PDF menus are not yet supported. Please use photo or text input.');
   }
 
-  return response.text();
+  const text = await response.text();
+  return text.length > MAX_MENU_TEXT_LENGTH ? text.slice(0, MAX_MENU_TEXT_LENGTH) : text;
 }
 
 export default async function handler(

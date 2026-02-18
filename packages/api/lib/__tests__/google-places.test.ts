@@ -22,10 +22,11 @@ describe('calculateDistance', () => {
 });
 
 describe('getPhotoUrl', () => {
-  it('returns a URL with the photo reference and API key', () => {
-    const url = getPhotoUrl('test-photo-ref');
-    expect(url).toContain('photo_reference=test-photo-ref');
-    expect(url).toContain('maxwidth=400');
-    expect(url).toContain('googleapis.com');
+  it('returns a URL with the photo name and size param', () => {
+    const url = getPhotoUrl('places/abc123/photos/def456');
+    expect(url).toContain('places/abc123/photos/def456');
+    expect(url).toContain('maxWidthPx=400');
+    expect(url).toContain('places.googleapis.com');
+    expect(url).toContain('/media');
   });
 });

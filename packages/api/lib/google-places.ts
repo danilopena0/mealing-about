@@ -1,25 +1,46 @@
 const GOOGLE_PLACES_API_KEY = process.env.GOOGLE_PLACES_API_KEY!;
-const PLACES_API_BASE = 'https://maps.googleapis.com/maps/api/place';
+const PLACES_API_BASE = 'https://places.googleapis.com/v1';
 
-export interface PlaceResult {
-  place_id: string;
+const PLACES_FIELD_MASK = [
+  'places.id',
+  'places.displayName',
+  'places.formattedAddress',
+  'places.location',
+  'places.rating',
+  'places.priceLevel',
+  'places.currentOpeningHours.openNow',
+  'places.photos',
+].join(',');
+
+function placesHeaders(): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    'X-Goog-Api-Key': GOOGLE_PLACES_API_KEY,
+    'X-Goog-FieldMask': PLACES_FIELD_MASK,
+  };
+}
+
+interface PlacePhoto {
   name: string;
-  vicinity: string;
-  geometry: {
-    location: {
-      lat: number;
-      lng: number;
-    };
+}
+
+interface PlaceResult {
+  id: string;
+  displayName: {
+    text: string;
+    languageCode: string;
+  };
+  formattedAddress: string;
+  location: {
+    latitude: number;
+    longitude: number;
   };
   rating?: number;
-  price_level?: number;
-  opening_hours?: {
-    open_now: boolean;
+  priceLevel?: string;
+  currentOpeningHours?: {
+    openNow: boolean;
   };
-  formatted_address?: string;
-  photos?: Array<{
-    photo_reference: string;
-  }>;
+  photos?: PlacePhoto[];
 }
 
 export interface Restaurant {
@@ -31,6 +52,18 @@ export interface Restaurant {
   priceLevel?: number;
   isOpen?: boolean;
   photoUrl?: string;
+}
+
+const PRICE_LEVEL_MAP: Record<string, number> = {
+  PRICE_LEVEL_FREE: 0,
+  PRICE_LEVEL_INEXPENSIVE: 1,
+  PRICE_LEVEL_MODERATE: 2,
+  PRICE_LEVEL_EXPENSIVE: 3,
+  PRICE_LEVEL_VERY_EXPENSIVE: 4,
+};
+
+function priceLevelToNumber(priceLevel?: string): number | undefined {
+  return priceLevel ? PRICE_LEVEL_MAP[priceLevel] : undefined;
 }
 
 export function calculateDistance(
@@ -53,8 +86,9 @@ export function calculateDistance(
   return R * c;
 }
 
-export function getPhotoUrl(photoReference: string): string {
-  return `${PLACES_API_BASE}/photo?maxwidth=400&photo_reference=${photoReference}&key=${GOOGLE_PLACES_API_KEY}`;
+// photoName is the `name` field from the Places API response, e.g. "places/{id}/photos/{ref}"
+export function getPhotoUrl(photoName: string): string {
+  return `${PLACES_API_BASE}/${photoName}/media?maxWidthPx=400&key=${GOOGLE_PLACES_API_KEY}`;
 }
 
 export async function searchNearbyRestaurants(
@@ -62,74 +96,68 @@ export async function searchNearbyRestaurants(
   longitude: number,
   radius: number = 1500
 ): Promise<Restaurant[]> {
-  const url = new URL(`${PLACES_API_BASE}/nearbysearch/json`);
-  url.searchParams.set('location', `${latitude},${longitude}`);
-  url.searchParams.set('radius', radius.toString());
-  url.searchParams.set('type', 'restaurant');
-  url.searchParams.set('key', GOOGLE_PLACES_API_KEY);
-
-  const response = await fetch(url.toString());
+  const response = await fetch(`${PLACES_API_BASE}/places:searchNearby`, {
+    method: 'POST',
+    headers: placesHeaders(),
+    body: JSON.stringify({
+      includedTypes: ['restaurant'],
+      locationRestriction: {
+        circle: {
+          center: { latitude, longitude },
+          radius,
+        },
+      },
+    }),
+  });
 
   if (!response.ok) {
     throw new Error(`Google Places API error: ${response.status}`);
   }
 
-  const data = await response.json();
-
-  if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-    throw new Error(`Google Places API error: ${data.status}`);
-  }
-
-  const results: PlaceResult[] = data.results || [];
+  const data = (await response.json()) as { places?: PlaceResult[] };
+  const results = data.places || [];
 
   return results.map((place) => ({
-    placeId: place.place_id,
-    name: place.name,
-    address: place.vicinity,
+    placeId: place.id,
+    name: place.displayName.text,
+    address: place.formattedAddress,
     distance: calculateDistance(
       latitude,
       longitude,
-      place.geometry.location.lat,
-      place.geometry.location.lng
+      place.location.latitude,
+      place.location.longitude
     ),
     rating: place.rating,
-    priceLevel: place.price_level,
-    isOpen: place.opening_hours?.open_now,
-    photoUrl: place.photos?.[0]
-      ? getPhotoUrl(place.photos[0].photo_reference)
-      : undefined,
+    priceLevel: priceLevelToNumber(place.priceLevel),
+    isOpen: place.currentOpeningHours?.openNow,
+    photoUrl: place.photos?.[0] ? getPhotoUrl(place.photos[0].name) : undefined,
   }));
 }
 
 export async function searchByText(query: string): Promise<Restaurant[]> {
-  const url = new URL(`${PLACES_API_BASE}/textsearch/json`);
-  url.searchParams.set('query', query);
-  url.searchParams.set('type', 'restaurant');
-  url.searchParams.set('key', GOOGLE_PLACES_API_KEY);
-
-  const response = await fetch(url.toString());
+  const response = await fetch(`${PLACES_API_BASE}/places:searchText`, {
+    method: 'POST',
+    headers: placesHeaders(),
+    body: JSON.stringify({
+      textQuery: query,
+      includedType: 'restaurant',
+    }),
+  });
 
   if (!response.ok) {
     throw new Error(`Google Places API error: ${response.status}`);
   }
 
-  const data = await response.json();
-
-  if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-    throw new Error(`Google Places API error: ${data.status}`);
-  }
-
-  const results: PlaceResult[] = data.results || [];
+  const data = (await response.json()) as { places?: PlaceResult[] };
+  const results = data.places || [];
 
   return results.map((place) => ({
-    placeId: place.place_id,
-    name: place.name,
-    address: place.formatted_address || place.vicinity,
+    placeId: place.id,
+    name: place.displayName.text,
+    address: place.formattedAddress,
     rating: place.rating,
-    priceLevel: place.price_level,
-    isOpen: place.opening_hours?.open_now,
-    photoUrl: place.photos?.[0]
-      ? getPhotoUrl(place.photos[0].photo_reference)
-      : undefined,
+    priceLevel: priceLevelToNumber(place.priceLevel),
+    isOpen: place.currentOpeningHours?.openNow,
+    photoUrl: place.photos?.[0] ? getPhotoUrl(place.photos[0].name) : undefined,
   }));
 }

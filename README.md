@@ -61,7 +61,7 @@ pnpm dev
 pnpm dev:web
 
 # Start API locally (in a separate terminal)
-pnpm --filter @mealing-about/api dev
+cd packages/api && vercel dev
 ```
 
 ### WSL-Specific Notes
@@ -160,6 +160,52 @@ pnpm lint             # Lint all packages
 
 See [CLAUDE.md](CLAUDE.md) for AI-assisted development guidelines.
 See [ARCHITECTURE.md](ARCHITECTURE.md) for system design documentation.
+
+## Troubleshooting
+
+### `node_modules missing` after cloning or moving the repo
+
+```bash
+pnpm install
+```
+
+### Vercel CLI not found
+
+Use `npm` to install it globally (not `pnpm`):
+
+```bash
+npm install -g vercel
+```
+
+### `vercel dev` — "Function Runtimes must have a valid version"
+
+The `functions` block in `packages/api/vercel.json` had `@vercel/node@3` (major-only).
+Either remove the `functions` block or pin a full version like `@vercel/node@3.0.7`.
+The current `vercel.json` omits it — `@vercel/node` is the default for `.ts` files.
+
+### `vercel dev` — "No Output Directory named 'public' found"
+
+The linked Vercel project has a build command set. Fix it in two places:
+
+1. `packages/api/vercel.json` — set `"buildCommand": ""` and `"outputDirectory": "."` (already done)
+2. Vercel dashboard → project Settings → General → clear **Build Command** and **Output Directory**, set **Framework Preset** to _Other_
+
+### `vercel dev` recursion error
+
+The `dev` script in `packages/api/package.json` used to be `vercel dev`, which caused
+Vercel CLI to invoke itself. The script has been renamed to `start`. Run the API with:
+
+```bash
+cd packages/api && vercel dev
+```
+
+### Unable to resolve `@babel/runtime/helpers/interopRequireDefault`
+
+`@babel/runtime` is missing from the mobile package. Install it:
+
+```bash
+pnpm --filter @mealing-about/mobile add @babel/runtime
+```
 
 ## License
 
