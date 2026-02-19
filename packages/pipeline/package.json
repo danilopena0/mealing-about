@@ -1,0 +1,29 @@
+{
+  "name": "@mealing-about/pipeline",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "discover": "tsx src/stages/01-discover.ts",
+    "enrich": "tsx src/stages/02-enrich.ts",
+    "find-menus": "tsx src/stages/03-find-menus.ts",
+    "extract": "tsx src/stages/04-extract.ts",
+    "analyze": "tsx src/stages/05-analyze.ts",
+    "run": "tsx src/run.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
+    "@google/generative-ai": "^0.21.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.7",
+    "pdf-parse": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/pdf-parse": "^1.1.4",
+    "tsx": "^4.7.0",
+    "typescript": "~5.3.3"
+  }
+}

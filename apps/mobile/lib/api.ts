@@ -4,6 +4,9 @@ import type {
   SearchByTextRequest,
   AnalyzeMenuRequest,
   AnalyzeMenuResponse,
+  RestaurantSummary,
+  PreloadedMenuItem,
+  DietFilter,
 } from '@/types';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000/api';
@@ -68,6 +71,34 @@ export async function analyzeMenu(
     method: 'POST',
     body: JSON.stringify(request),
   });
+}
+
+export async function browseRestaurants(params: {
+  neighborhood?: string;
+  diet?: DietFilter;
+  page?: number;
+  limit?: number;
+}): Promise<{ restaurants: RestaurantSummary[]; total: number }> {
+  const searchParams = new URLSearchParams();
+  if (params.neighborhood) searchParams.set('neighborhood', params.neighborhood);
+  if (params.diet && params.diet !== 'all') searchParams.set('diet', params.diet);
+  if (params.page !== undefined) searchParams.set('page', String(params.page));
+  if (params.limit !== undefined) searchParams.set('limit', String(params.limit));
+
+  const query = searchParams.toString();
+  const endpoint = query ? `/restaurants?${query}` : '/restaurants';
+
+  const data = await fetchApi<{ restaurants: RestaurantSummary[]; total: number; page: number; limit: number }>(endpoint);
+  return { restaurants: data.restaurants, total: data.total };
+}
+
+export async function getRestaurantDetail(slug: string): Promise<{
+  restaurant: RestaurantSummary;
+  menuItems: PreloadedMenuItem[];
+}> {
+  return fetchApi<{ restaurant: RestaurantSummary; menuItems: PreloadedMenuItem[] }>(
+    `/restaurant?slug=${encodeURIComponent(slug)}`
+  );
 }
 
 export { ApiError };

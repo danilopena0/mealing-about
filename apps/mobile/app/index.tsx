@@ -96,6 +96,9 @@ export default function HomeScreen() {
           <Text style={styles.subtitle}>
             Find vegan, vegetarian & gluten-free options at any restaurant
           </Text>
+          <Text style={styles.browseSubtitle}>
+            We've pre-analyzed menus from independent Chicago restaurants 🌱
+          </Text>
         </View>
 
         <View style={styles.featuresSection}>
@@ -120,6 +123,28 @@ export default function HomeScreen() {
         </View>
 
         {renderLocationStatus()}
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.browseButton,
+            pressed && styles.browseButtonPressed,
+          ]}
+          onPress={() => router.push('/browse')}
+        >
+          <Ionicons
+            name="restaurant"
+            size={24}
+            color="#22c55e"
+            style={styles.buttonIcon}
+          />
+          <Text style={styles.browseButtonText}>Browse Chicago restaurants</Text>
+        </Pressable>
+
+        <View style={styles.orDivider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or find near you</Text>
+          <View style={styles.dividerLine} />
+        </View>
 
         <Pressable
           style={({ pressed }) => [
@@ -212,6 +237,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
+  browseSubtitle: {
+    fontSize: 13,
+    color: '#22c55e',
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 18,
+  },
   featuresSection: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -252,6 +284,31 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 14,
     color: '#ef4444',
+  },
+  browseButton: {
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#22c55e',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginBottom: 0,
+  },
+  browseButtonPressed: {
+    backgroundColor: '#f0fdf4',
+  },
+  browseButtonText: {
+    color: '#22c55e',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  orDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 16,
   },
   searchButton: {
     backgroundColor: '#22c55e',

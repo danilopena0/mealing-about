@@ -35,6 +35,18 @@ export default function RootLayout() {
             title: 'Menu Analysis',
           }}
         />
+        <Stack.Screen
+          name="browse"
+          options={{
+            title: 'Browse Chicago',
+          }}
+        />
+        <Stack.Screen
+          name="browse/[slug]"
+          options={{
+            title: 'Restaurant Menu',
+          }}
+        />
       </Stack>
     </SafeAreaProvider>
   );
