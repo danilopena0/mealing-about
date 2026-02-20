@@ -97,7 +97,7 @@ export default function HomeScreen() {
             Find vegan, vegetarian & gluten-free options at any restaurant
           </Text>
           <Text style={styles.browseSubtitle}>
-            We've pre-analyzed menus from independent Chicago restaurants 🌱
+            Browse pre-analyzed menus from independent restaurants 🌱
           </Text>
         </View>
 
@@ -137,7 +137,7 @@ export default function HomeScreen() {
             color="#22c55e"
             style={styles.buttonIcon}
           />
-          <Text style={styles.browseButtonText}>Browse Chicago restaurants</Text>
+          <Text style={styles.browseButtonText}>Browse pre-analyzed menus</Text>
         </Pressable>
 
         <View style={styles.orDivider}>
