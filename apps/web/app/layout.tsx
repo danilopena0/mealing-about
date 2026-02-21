@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
 export const metadata: Metadata = {
-  title: 'Mealing About — Find vegan & veggie options in Chicago',
+  title: 'Mealing About — Find vegan, vegetarian & gluten-free options',
   description:
-    'Browse pre-analyzed menus from Chicago restaurants. Find vegan, vegetarian, and gluten-free dishes instantly.',
+    'Browse pre-analyzed menus from independent restaurants. Find vegan, vegetarian, and gluten-free dishes instantly.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -47,6 +47,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <span>🍽️</span>
             <span>Mealing About</span>
           </a>
+          <nav style={{ marginLeft: 'auto', display: 'flex', gap: '24px' }}>
+            <a href="/restaurants" style={{ textDecoration: 'none', color: '#374151', fontWeight: 500, fontSize: '15px' }}>
+              Browse
+            </a>
+            <a href="/analyze" style={{ textDecoration: 'none', color: '#374151', fontWeight: 500, fontSize: '15px' }}>
+              Analyze
+            </a>
+          </nav>
         </header>
         <main style={{ minHeight: 'calc(100vh - 60px)' }}>{children}</main>
       </body>

@@ -11,7 +11,7 @@ const DIET_OPTIONS: { value: DietFilter; label: string }[] = [
 const ITEMS_PER_PAGE = 20;
 
 interface PageProps {
-  searchParams: Promise<{ neighborhood?: string; diet?: string; page?: string }>;
+  searchParams: Promise<{ neighborhood?: string; diet?: string; page?: string; q?: string }>;
 }
 
 export default async function RestaurantsPage({ searchParams }: PageProps) {
@@ -19,11 +19,13 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
   const neighborhood = params.neighborhood;
   const diet = (params.diet as DietFilter) || 'all';
   const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1);
+  const search = params.q?.trim() || undefined;
 
   const [{ restaurants, total }, neighborhoods] = await Promise.all([
     getRestaurants({
       neighborhood,
       diet: diet === 'all' ? undefined : diet,
+      search,
       page,
       limit: ITEMS_PER_PAGE,
     }),
@@ -36,6 +38,7 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
     const merged = {
       neighborhood,
       diet: diet === 'all' ? undefined : diet,
+      q: search,
       page: page > 1 ? String(page) : undefined,
       ...overrides,
     };
@@ -45,6 +48,12 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
       .join('&');
     return qs ? `/restaurants?${qs}` : '/restaurants';
   }
+
+  const pageTitle = search
+    ? `Results for "${search}"`
+    : neighborhood
+      ? `Restaurants in ${neighborhood}`
+      : 'Browse restaurants';
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
@@ -57,14 +66,73 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
           color: '#111827',
         }}
       >
-        Chicago restaurants
-        {neighborhood ? ` in ${neighborhood}` : ''}
+        {pageTitle}
         {total > 0 && (
           <span style={{ fontSize: '16px', fontWeight: 400, color: '#6b7280', marginLeft: '12px' }}>
             {total} found
           </span>
         )}
       </h1>
+
+      {/* Search bar */}
+      <form method="GET" action="/restaurants" style={{ marginBottom: '20px' }}>
+        {neighborhood && <input type="hidden" name="neighborhood" value={neighborhood} />}
+        {diet !== 'all' && <input type="hidden" name="diet" value={diet} />}
+        <div style={{ display: 'flex', gap: '8px', maxWidth: '480px' }}>
+          <input
+            type="text"
+            name="q"
+            defaultValue={search ?? ''}
+            placeholder="Search by restaurant name..."
+            style={{
+              flex: 1,
+              height: '42px',
+              border: '1px solid #d1d5db',
+              borderRadius: '8px',
+              paddingInline: '14px',
+              fontSize: '15px',
+              color: '#111827',
+              background: '#fff',
+              outline: 'none',
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              height: '42px',
+              paddingInline: '18px',
+              background: '#22c55e',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: 600,
+              fontSize: '15px',
+              cursor: 'pointer',
+            }}
+          >
+            Search
+          </button>
+          {search && (
+            <a
+              href={buildUrl({ q: undefined, page: undefined })}
+              style={{
+                height: '42px',
+                paddingInline: '14px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                color: '#6b7280',
+                textDecoration: 'none',
+                fontSize: '14px',
+                background: '#fff',
+              }}
+            >
+              Clear ✕
+            </a>
+          )}
+        </div>
+      </form>
 
       {/* Filter bar */}
       <div
@@ -306,7 +374,6 @@ function RestaurantCard({ restaurant: r }: { restaurant: RestaurantSummary }) {
         />
       )}
       <div style={{ padding: '20px' }}>
-        {/* Neighborhood tag */}
         {r.neighborhood && (
           <span
             style={{
@@ -337,7 +404,6 @@ function RestaurantCard({ restaurant: r }: { restaurant: RestaurantSummary }) {
           {r.name}
         </h3>
 
-        {/* Rating & price */}
         <div
           style={{
             display: 'flex',
@@ -361,7 +427,6 @@ function RestaurantCard({ restaurant: r }: { restaurant: RestaurantSummary }) {
           )}
         </div>
 
-        {/* Editorial summary */}
         {r.editorial_summary && (
           <p
             style={{
@@ -379,7 +444,6 @@ function RestaurantCard({ restaurant: r }: { restaurant: RestaurantSummary }) {
           </p>
         )}
 
-        {/* Dietary badges */}
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {r.vegan_count > 0 && (
             <DietBadge label={`${r.vegan_count} vegan`} color="#16a34a" bg="#f0fdf4" />
@@ -396,15 +460,7 @@ function RestaurantCard({ restaurant: r }: { restaurant: RestaurantSummary }) {
   );
 }
 
-function DietBadge({
-  label,
-  color,
-  bg,
-}: {
-  label: string;
-  color: string;
-  bg: string;
-}) {
+function DietBadge({ label, color, bg }: { label: string; color: string; bg: string }) {
   return (
     <span
       style={{

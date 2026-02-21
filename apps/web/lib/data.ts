@@ -4,10 +4,11 @@ import type { RestaurantSummary, MenuItem, DietFilter } from './types';
 export async function getRestaurants(params: {
   neighborhood?: string;
   diet?: DietFilter;
+  search?: string;
   page?: number;
   limit?: number;
 }): Promise<{ restaurants: RestaurantSummary[]; total: number }> {
-  const { neighborhood, diet, page = 1, limit = 20 } = params;
+  const { neighborhood, diet, search, page = 1, limit = 20 } = params;
   const clampedLimit = Math.min(50, Math.max(1, limit));
   const clampedPage = Math.max(1, page);
 
@@ -18,6 +19,10 @@ export async function getRestaurants(params: {
 
   if (neighborhood) {
     query = query.eq('neighborhood', neighborhood);
+  }
+
+  if (search) {
+    query = query.ilike('name', `%${search}%`);
   }
 
   if (diet && diet !== 'all') {

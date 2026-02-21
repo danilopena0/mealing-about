@@ -28,7 +28,7 @@ export default async function HomePage() {
               marginTop: 0,
             }}
           >
-            Find your next vegan meal in Chicago
+            Find vegan, vegetarian & gluten-free options anywhere
           </h1>
           <p
             style={{
@@ -39,26 +39,43 @@ export default async function HomePage() {
               marginTop: 0,
             }}
           >
-            We&apos;ve analyzed menus from 200+ independent Chicago restaurants so you don&apos;t
-            have to.
+            We&apos;ve pre-analyzed menus from independent restaurants — or paste any menu to get
+            instant dietary labels.
           </p>
-          <a
-            href="/restaurants"
-            style={{
-              display: 'inline-block',
-              background: '#22c55e',
-              color: '#ffffff',
-              padding: '16px 40px',
-              borderRadius: '12px',
-              textDecoration: 'none',
-              fontWeight: 700,
-              fontSize: '18px',
-              boxShadow: '0 4px 12px rgba(34,197,94,0.35)',
-              transition: 'background 0.15s',
-            }}
-          >
-            Browse restaurants
-          </a>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a
+              href="/restaurants"
+              style={{
+                display: 'inline-block',
+                background: '#22c55e',
+                color: '#ffffff',
+                padding: '16px 32px',
+                borderRadius: '12px',
+                textDecoration: 'none',
+                fontWeight: 700,
+                fontSize: '18px',
+                boxShadow: '0 4px 12px rgba(34,197,94,0.35)',
+              }}
+            >
+              Browse restaurants
+            </a>
+            <a
+              href="/analyze"
+              style={{
+                display: 'inline-block',
+                background: '#ffffff',
+                color: '#16a34a',
+                padding: '16px 32px',
+                borderRadius: '12px',
+                textDecoration: 'none',
+                fontWeight: 700,
+                fontSize: '18px',
+                border: '2px solid #22c55e',
+              }}
+            >
+              Analyze any menu
+            </a>
+          </div>
         </div>
       </section>
 

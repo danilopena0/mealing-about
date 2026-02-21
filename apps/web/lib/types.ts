@@ -10,6 +10,7 @@ export interface RestaurantSummary {
   serves_vegetarian_food: boolean | null;
   editorial_summary: string | null;
   photo_url: string | null;
+  website_uri: string | null;
   vegan_count: number;
   vegetarian_count: number;
   gluten_free_count: number;
