@@ -1,6 +1,5 @@
 import { MENU_ANALYSIS_PROMPT, type MenuItem } from './menu-analyzer.js';
 
-const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY!;
 const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
 
 interface PerplexityMessage {
@@ -22,6 +21,11 @@ interface PerplexityResponse {
 }
 
 export async function analyzeWithPerplexity(menuText: string): Promise<MenuItem[]> {
+  const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
+  if (!PERPLEXITY_API_KEY) {
+    throw new Error('PERPLEXITY_API_KEY is not configured. Set it in your environment variables.');
+  }
+
   const messages: PerplexityMessage[] = [
     {
       role: 'system',
