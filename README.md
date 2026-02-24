@@ -149,6 +149,13 @@ mealing-about/
 - **Modification suggestions** — how to make items diet-friendly
 - **Menu caching** — stores analyzed menus for 30 days via Supabase
 
+## Next Steps
+
+- **Bounding box grid for city coverage** — replace the hardcoded Chicago neighborhood list with a grid-based approach: geocode any city to get its bounding box, then generate a regular grid of search points at ~1km spacing. Each point gets searched with an appropriate radius, giving systematic coverage for any city shape without manual coordinate work. Radius can be tuned per city density (denser grid for NYC, sparser for Phoenix/Houston sprawl).
+- Multi-city support — allow the pipeline to run against a configurable list of cities
+- PDF menu support — extract text from PDF menus (currently unsupported)
+- Adaptive grid — subdivide search cells that return max results (20) to catch dense pockets
+
 ## Development
 
 ```bash
@@ -156,6 +163,9 @@ pnpm dev              # Start Expo dev server
 pnpm dev:web          # Start web version
 pnpm typecheck        # Type check all packages
 pnpm lint             # Lint all packages
+
+# Run the data pipeline (discover → enrich → find menus → extract → analyze)
+pnpm --filter @mealing-about/pipeline run run
 ```
 
 See [CLAUDE.md](CLAUDE.md) for AI-assisted development guidelines.

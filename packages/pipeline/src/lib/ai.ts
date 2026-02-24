@@ -70,7 +70,6 @@ async function analyzeWithPerplexity(menuText: string): Promise<AnalyzedMenuItem
               content: `${ANALYSIS_PROMPT}\n\nMenu text:\n${menuText}`,
             },
           ],
-          response_format: { type: 'json_object' },
         }),
       });
     } finally {
@@ -78,7 +77,8 @@ async function analyzeWithPerplexity(menuText: string): Promise<AnalyzedMenuItem
     }
 
     if (!response.ok) {
-      throw new Error(`Perplexity API error: ${response.status} ${response.statusText}`);
+      const body = await response.text();
+      throw new Error(`Perplexity API error: ${response.status} ${response.statusText} — ${body}`);
     }
 
     const data = (await response.json()) as {
@@ -110,7 +110,7 @@ async function analyzeWithPerplexity(menuText: string): Promise<AnalyzedMenuItem
 
 async function analyzeWithGemini(menuText: string): Promise<AnalyzedMenuItem[]> {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
   const attempt = async (): Promise<AnalyzedMenuItem[]> => {
     const result = await model.generateContent(

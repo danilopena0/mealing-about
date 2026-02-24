@@ -1,0 +1,2 @@
+# pre-commit checks intentionally left empty.
+# Full CI checks (typecheck, lint, test) run in pre-push.
