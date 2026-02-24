@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getRestaurants, getNeighborhoods } from '@/lib/data';
 import type { DietFilter, RestaurantSummary } from '@/lib/types';
 
@@ -113,7 +114,7 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
             Search
           </button>
           {search && (
-            <a
+            <Link
               href={buildUrl({ q: undefined, page: undefined })}
               style={{
                 height: '42px',
@@ -129,7 +130,7 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
               }}
             >
               Clear ✕
-            </a>
+            </Link>
           )}
         </div>
       </form>
@@ -149,7 +150,7 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
           {DIET_OPTIONS.map((opt) => {
             const active = diet === opt.value;
             return (
-              <a
+              <Link
                 key={opt.value}
                 href={buildUrl({ diet: opt.value === 'all' ? undefined : opt.value, page: undefined })}
                 style={{
@@ -166,7 +167,7 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
                 }}
               >
                 {opt.label}
-              </a>
+              </Link>
             );
           })}
         </div>
@@ -176,7 +177,7 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
             <div style={{ width: '1px', height: '32px', background: '#e5e7eb', margin: '0 4px' }} />
             {/* Neighborhood pills */}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <a
+              <Link
                 href={buildUrl({ neighborhood: undefined, page: undefined })}
                 style={{
                   display: 'inline-block',
@@ -192,11 +193,11 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
                 }}
               >
                 All areas
-              </a>
+              </Link>
               {neighborhoods.map((n) => {
                 const active = neighborhood === n;
                 return (
-                  <a
+                  <Link
                     key={n}
                     href={buildUrl({ neighborhood: n, page: undefined })}
                     style={{
@@ -213,7 +214,7 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
                     }}
                   >
                     {n}
-                  </a>
+                  </Link>
                 );
               })}
             </div>
@@ -237,7 +238,7 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
           <p style={{ marginTop: 0, marginBottom: '24px' }}>
             Try adjusting your filters or browse all restaurants.
           </p>
-          <a
+          <Link
             href="/restaurants"
             style={{
               display: 'inline-block',
@@ -250,7 +251,7 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
             }}
           >
             Clear filters
-          </a>
+          </Link>
         </div>
       ) : (
         <>
@@ -279,7 +280,7 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
               }}
             >
               {page > 1 ? (
-                <a
+                <Link
                   href={buildUrl({ page: page > 2 ? String(page - 1) : undefined })}
                   style={{
                     padding: '10px 20px',
@@ -292,7 +293,7 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
                   }}
                 >
                   Previous
-                </a>
+                </Link>
               ) : (
                 <span
                   style={{
@@ -311,7 +312,7 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
                 Page {page} of {totalPages}
               </span>
               {page < totalPages ? (
-                <a
+                <Link
                   href={buildUrl({ page: String(page + 1) })}
                   style={{
                     padding: '10px 20px',
@@ -324,7 +325,7 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
                   }}
                 >
                   Next
-                </a>
+                </Link>
               ) : (
                 <span
                   style={{
@@ -351,7 +352,7 @@ function RestaurantCard({ restaurant: r }: { restaurant: RestaurantSummary }) {
   const priceLabel = r.price_level != null ? '$'.repeat(Math.max(1, r.price_level)) : null;
 
   return (
-    <a
+    <Link
       href={`/restaurants/${r.slug}`}
       style={{
         display: 'block',
@@ -456,7 +457,7 @@ function RestaurantCard({ restaurant: r }: { restaurant: RestaurantSummary }) {
           )}
         </div>
       </div>
-    </a>
+    </Link>
   );
 }
 

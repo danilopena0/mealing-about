@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { getRestaurant } from '@/lib/data';
 import { MenuFilter } from './MenuFilter';
 
@@ -34,7 +35,7 @@ export default async function RestaurantPage({ params }: PageProps) {
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '32px 24px 80px' }}>
       {/* Back link */}
-      <a
+      <Link
         href="/restaurants"
         style={{
           display: 'inline-flex',
@@ -48,7 +49,7 @@ export default async function RestaurantPage({ params }: PageProps) {
         }}
       >
         <span>&#8592;</span> All restaurants
-      </a>
+      </Link>
 
       {/* Restaurant header */}
       <div

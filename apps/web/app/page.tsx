@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getDietaryCounts, getNeighborhoods } from '@/lib/data';
 
 export default async function HomePage() {
@@ -43,7 +44,7 @@ export default async function HomePage() {
             instant dietary labels.
           </p>
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a
+            <Link
               href="/restaurants"
               style={{
                 display: 'inline-block',
@@ -58,8 +59,8 @@ export default async function HomePage() {
               }}
             >
               Browse restaurants
-            </a>
-            <a
+            </Link>
+            <Link
               href="/analyze"
               style={{
                 display: 'inline-block',
@@ -74,7 +75,7 @@ export default async function HomePage() {
               }}
             >
               Analyze any menu
-            </a>
+            </Link>
           </div>
         </div>
       </section>
@@ -175,7 +176,7 @@ export default async function HomePage() {
             }}
           >
             {neighborhoods.map((n) => (
-              <a
+              <Link
                 key={n}
                 href={`/restaurants?neighborhood=${encodeURIComponent(n)}`}
                 style={{
@@ -193,7 +194,7 @@ export default async function HomePage() {
                 }}
               >
                 {n}
-              </a>
+              </Link>
             ))}
           </div>
         </section>
@@ -248,7 +249,7 @@ function FeatureCard({
 
 function PillLink({ href, label }: { href: string; label: string }) {
   return (
-    <a
+    <Link
       href={href}
       style={{
         display: 'inline-block',
@@ -264,6 +265,6 @@ function PillLink({ href, label }: { href: string; label: string }) {
       }}
     >
       {label}
-    </a>
+    </Link>
   );
 }

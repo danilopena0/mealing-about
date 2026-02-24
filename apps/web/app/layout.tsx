@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Mealing About — Find vegan, vegetarian & gluten-free options',
@@ -32,7 +33,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             zIndex: 100,
           }}
         >
-          <a
+          <Link
             href="/"
             style={{
               textDecoration: 'none',
@@ -46,14 +47,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           >
             <span>🍽️</span>
             <span>Mealing About</span>
-          </a>
+          </Link>
           <nav style={{ marginLeft: 'auto', display: 'flex', gap: '24px' }}>
-            <a href="/restaurants" style={{ textDecoration: 'none', color: '#374151', fontWeight: 500, fontSize: '15px' }}>
+            <Link href="/restaurants" style={{ textDecoration: 'none', color: '#374151', fontWeight: 500, fontSize: '15px' }}>
               Browse
-            </a>
-            <a href="/analyze" style={{ textDecoration: 'none', color: '#374151', fontWeight: 500, fontSize: '15px' }}>
+            </Link>
+            <Link href="/analyze" style={{ textDecoration: 'none', color: '#374151', fontWeight: 500, fontSize: '15px' }}>
               Analyze
-            </a>
+            </Link>
           </nav>
         </header>
         <main style={{ minHeight: 'calc(100vh - 60px)' }}>{children}</main>
