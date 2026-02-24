@@ -155,6 +155,7 @@ mealing-about/
 - Multi-city support — allow the pipeline to run against a configurable list of cities
 - PDF menu support — extract text from PDF menus (currently unsupported)
 - Adaptive grid — subdivide search cells that return max results (20) to catch dense pockets
+- _(low priority)_ HappyCow badge — show a "Listed on HappyCow" trust signal on restaurant cards for users who care about veg-friendly venues; blocked on HappyCow not having a public API
 
 ## Development
 
