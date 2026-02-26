@@ -13,7 +13,6 @@ on:
         options:
           - ''
           - discover
-          - enrich
           - find-menus
           - extract
           - analyze

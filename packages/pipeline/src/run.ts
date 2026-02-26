@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import { main as discover } from './stages/01-discover.js';
-import { main as enrich } from './stages/02-enrich.js';
 import { main as findMenus } from './stages/03-find-menus.js';
 import { main as extract } from './stages/04-extract.js';
 import { main as analyze } from './stages/05-analyze.js';
@@ -41,10 +40,9 @@ async function main(): Promise<void> {
 
   const stages: Array<{ name: string; fn: () => Promise<void> }> = [
     { name: 'Stage 1: Discover', fn: discover },
-    { name: 'Stage 2: Enrich', fn: enrich },
-    { name: 'Stage 3: Find Menus', fn: findMenus },
-    { name: 'Stage 4: Extract', fn: extract },
-    { name: 'Stage 5: Analyze', fn: analyze },
+    { name: 'Stage 2: Find Menus', fn: findMenus },
+    { name: 'Stage 3: Extract', fn: extract },
+    { name: 'Stage 4: Analyze', fn: analyze },
   ];
 
   const results: StageResult[] = [];

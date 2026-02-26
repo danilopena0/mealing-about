@@ -168,7 +168,7 @@ pnpm lint             # Lint all packages
 
 ### Data Pipeline
 
-The pipeline pre-populates the database with restaurants and their analyzed menus. It runs five stages in sequence: discover → enrich → find menus → extract → analyze.
+The pipeline pre-populates the database with restaurants and their analyzed menus. It runs four stages in sequence: discover → find menus → extract → analyze.
 
 **Run the full pipeline (all stages):**
 
@@ -179,19 +179,16 @@ pnpm --filter @mealing-about/pipeline run run
 **Run a specific stage in isolation:**
 
 ```bash
-# Stage 1 — Discover restaurants from Google Places
+# Stage 1 — Discover restaurants from Google Places (includes website, phone, and dietary flags)
 pnpm --filter @mealing-about/pipeline run discover
 
-# Stage 2 — Enrich restaurant records with additional details
-pnpm --filter @mealing-about/pipeline run enrich
-
-# Stage 3 — Find menu URLs for each restaurant
+# Stage 2 — Find menu URLs for each restaurant
 pnpm --filter @mealing-about/pipeline run find-menus
 
-# Stage 4 — Extract menu text from URLs and PDFs
+# Stage 3 — Extract menu text from URLs and PDFs
 pnpm --filter @mealing-about/pipeline run extract
 
-# Stage 5 — Analyze menus with AI for dietary labels
+# Stage 4 — Analyze menus with AI for dietary labels
 pnpm --filter @mealing-about/pipeline run analyze
 ```
 

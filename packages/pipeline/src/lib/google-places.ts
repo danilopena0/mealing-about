@@ -19,6 +19,10 @@ interface NearbyRestaurant {
   userRatingCount: number | null;
   priceLevel: number | null;
   photoUrl: string | null;
+  websiteUri: string | null;
+  phone: string | null;
+  servesVegetarianFood: boolean | null;
+  editorialSummary: string | null;
 }
 
 interface PlaceDetails {
@@ -61,7 +65,7 @@ export async function searchNearbyRestaurants(
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': API_KEY,
         'X-Goog-FieldMask':
-          'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.priceLevel,places.photos',
+          'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.priceLevel,places.photos,places.websiteUri,places.nationalPhoneNumber,places.servesVegetarianFood,places.editorialSummary',
       },
       body: JSON.stringify({
         includedTypes: ['restaurant'],
@@ -96,6 +100,10 @@ export async function searchNearbyRestaurants(
       userRatingCount?: number;
       priceLevel?: string;
       photos?: unknown[];
+      websiteUri?: string;
+      nationalPhoneNumber?: string;
+      servesVegetarianFood?: boolean;
+      editorialSummary?: { text?: string };
     };
 
     return {
@@ -108,6 +116,10 @@ export async function searchNearbyRestaurants(
       userRatingCount: p.userRatingCount ?? null,
       priceLevel: p.priceLevel ? (PRICE_LEVEL_MAP[p.priceLevel] ?? null) : null,
       photoUrl: extractPhotoUrl(p.photos ?? []),
+      websiteUri: p.websiteUri ?? null,
+      phone: p.nationalPhoneNumber ?? null,
+      servesVegetarianFood: p.servesVegetarianFood ?? null,
+      editorialSummary: p.editorialSummary?.text ?? null,
     };
   });
 }

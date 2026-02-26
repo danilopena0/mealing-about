@@ -59,7 +59,12 @@ export async function main(): Promise<void> {
             user_rating_count: place.userRatingCount,
             price_level: place.priceLevel,
             photo_url: place.photoUrl,
-            analysis_status: 'pending',
+            website_uri: place.websiteUri,
+            phone: place.phone,
+            serves_vegetarian_food: place.servesVegetarianFood,
+            editorial_summary: place.editorialSummary,
+            analysis_status: place.websiteUri ? 'pending' : 'failed',
+            analysis_error: place.websiteUri ? null : 'No website found',
             updated_at: new Date().toISOString(),
           },
           {
