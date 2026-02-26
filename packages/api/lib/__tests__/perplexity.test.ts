@@ -7,6 +7,7 @@ import { analyzeWithPerplexity } from '../perplexity.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  process.env.PERPLEXITY_API_KEY = 'test-key';
 });
 
 function makeResponse(content: string) {

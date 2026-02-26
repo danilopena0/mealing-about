@@ -3,7 +3,20 @@ name: Pipeline
 on:
   schedule:
     - cron: '0 4 * * 0'  # Every Sunday at 4am UTC
-  workflow_dispatch:       # Manual trigger from GitHub UI
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: 'Stage to run (leave blank to run the full pipeline)'
+        required: false
+        type: choice
+        default: ''
+        options:
+          - ''
+          - discover
+          - enrich
+          - find-menus
+          - extract
+          - analyze
 
 jobs:
   run-pipeline:
@@ -32,4 +45,9 @@ jobs:
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: pnpm run run
+        run: |
+          if [ -z "${{ inputs.stage }}" ]; then
+            pnpm run run
+          else
+            pnpm run ${{ inputs.stage }}
+          fi

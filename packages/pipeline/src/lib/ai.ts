@@ -38,7 +38,12 @@ function extractJsonFromResponse(text: string): AnalyzedMenuItem[] {
   const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   const jsonText = codeBlockMatch ? codeBlockMatch[1]! : text;
 
-  const parsed = JSON.parse(jsonText.trim()) as { items: AnalyzedMenuItem[] };
+  const parsed = JSON.parse(jsonText.trim()) as { items?: AnalyzedMenuItem[] };
+  if (!Array.isArray(parsed.items)) {
+    throw new Error(
+      `AI response missing "items" array. Got keys: ${Object.keys(parsed).join(', ')}`,
+    );
+  }
   return parsed.items;
 }
 
@@ -47,7 +52,7 @@ async function analyzeWithPerplexity(menuText: string): Promise<AnalyzedMenuItem
 
   const attempt = async (): Promise<AnalyzedMenuItem[]> => {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 30_000);
+    const timer = setTimeout(() => controller.abort(), 60_000);
 
     let response: Response;
     try {
@@ -98,8 +103,12 @@ async function analyzeWithPerplexity(menuText: string): Promise<AnalyzedMenuItem
       return await attempt();
     } catch (err) {
       lastErr = err as Error;
-      if (err instanceof SyntaxError && i < maxRetries) {
-        console.log(`  Perplexity returned non-JSON, retrying (${i + 1}/${maxRetries})...`);
+      const isRetryable =
+        err instanceof SyntaxError ||
+        (err instanceof Error && err.message.includes('"items" array')) ||
+        (err instanceof Error && err.message.includes('aborted'));
+      if (isRetryable && i < maxRetries) {
+        console.log(`  Perplexity returned bad/no response, retrying (${i + 1}/${maxRetries})...`);
         continue;
       }
       throw err;
@@ -110,7 +119,7 @@ async function analyzeWithPerplexity(menuText: string): Promise<AnalyzedMenuItem
 
 async function analyzeWithGemini(menuText: string): Promise<AnalyzedMenuItem[]> {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
   const attempt = async (): Promise<AnalyzedMenuItem[]> => {
     const result = await model.generateContent(

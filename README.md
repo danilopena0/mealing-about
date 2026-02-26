@@ -164,10 +164,77 @@ pnpm dev              # Start Expo dev server
 pnpm dev:web          # Start web version
 pnpm typecheck        # Type check all packages
 pnpm lint             # Lint all packages
+```
 
-# Run the data pipeline (discover → enrich → find menus → extract → analyze)
+### Data Pipeline
+
+The pipeline pre-populates the database with restaurants and their analyzed menus. It runs five stages in sequence: discover → enrich → find menus → extract → analyze.
+
+**Run the full pipeline (all stages):**
+
+```bash
 pnpm --filter @mealing-about/pipeline run run
 ```
+
+**Run a specific stage in isolation:**
+
+```bash
+# Stage 1 — Discover restaurants from Google Places
+pnpm --filter @mealing-about/pipeline run discover
+
+# Stage 2 — Enrich restaurant records with additional details
+pnpm --filter @mealing-about/pipeline run enrich
+
+# Stage 3 — Find menu URLs for each restaurant
+pnpm --filter @mealing-about/pipeline run find-menus
+
+# Stage 4 — Extract menu text from URLs and PDFs
+pnpm --filter @mealing-about/pipeline run extract
+
+# Stage 5 — Analyze menus with AI for dietary labels
+pnpm --filter @mealing-about/pipeline run analyze
+```
+
+Stages can be run independently — useful for re-running a failed stage or iterating on a single step without repeating the full pipeline. Each stage reads from and writes back to Supabase, so they pick up where a previous run left off.
+
+### Running the pipeline via GitHub Actions
+
+The pipeline also runs as a GitHub Actions workflow (`.github/workflows/pipeline.yml`). It triggers automatically every Sunday at 4am UTC, and can be triggered manually at any time.
+
+**From the GitHub UI:**
+
+1. Go to the **Actions** tab in the repository
+2. Select **Pipeline** from the left sidebar
+3. Click **Run workflow**
+4. Optionally pick a specific stage from the dropdown (leave blank to run all five)
+5. Click the green **Run workflow** button
+
+**From the CLI:**
+
+```bash
+# Run the full pipeline
+gh workflow run pipeline.yml
+
+# Run a specific stage
+gh workflow run pipeline.yml --field stage=analyze
+
+# Check on the run after triggering it
+gh run list --workflow=pipeline.yml
+gh run watch   # tail live logs of the most recent run
+```
+
+Once triggered, the job runs entirely on GitHub's servers — you can close your terminal or shut down your machine immediately after.
+
+**Required GitHub secrets** (set under Settings → Secrets → Actions):
+
+| Secret | Purpose |
+|--------|---------|
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (write access) |
+| `GOOGLE_PLACES_API_KEY` | Restaurant discovery |
+| `PERPLEXITY_API_KEY` | Menu text analysis |
+| `ANTHROPIC_API_KEY` | Image-based menu analysis |
+| `GEMINI_API_KEY` | Menu analysis (Gemini provider) |
 
 See [CLAUDE.md](CLAUDE.md) for AI-assisted development guidelines.
 See [ARCHITECTURE.md](ARCHITECTURE.md) for system design documentation.
