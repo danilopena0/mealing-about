@@ -97,7 +97,8 @@ You can still access it from Windows:
 | `PERPLEXITY_API_KEY` | Yes | Perplexity API key for text menu analysis |
 | `ANTHROPIC_API_KEY` | For images | Claude API key for image-based menu analysis |
 | `SUPABASE_URL` | Yes | Supabase project URL |
-| `SUPABASE_ANON_KEY` | Yes | Supabase anonymous key |
+| `SUPABASE_ANON_KEY` | Yes | Supabase anonymous key (public read) |
+| `SUPABASE_SERVICE_ROLE_KEY` | For auto-save | Supabase service role key — allows the analyze endpoint to write restaurants/menu items to the DB |
 | `EXPO_PUBLIC_API_URL` | Yes | Backend API URL (e.g. `http://localhost:3000/api`) |
 
 ## Project Structure
@@ -149,14 +150,6 @@ mealing-about/
 - **Modification suggestions** — how to make items diet-friendly
 - **Menu caching** — stores analyzed menus for 30 days via Supabase
 
-## Next Steps
-
-- **Bounding box grid for city coverage** — replace the hardcoded Chicago neighborhood list with a grid-based approach: geocode any city to get its bounding box, then generate a regular grid of search points at ~1km spacing. Each point gets searched with an appropriate radius, giving systematic coverage for any city shape without manual coordinate work. Radius can be tuned per city density (denser grid for NYC, sparser for Phoenix/Houston sprawl).
-- Multi-city support — allow the pipeline to run against a configurable list of cities
-- PDF menu support — extract text from PDF menus (currently unsupported)
-- Adaptive grid — subdivide search cells that return max results (20) to catch dense pockets
-- _(low priority)_ HappyCow badge — show a "Listed on HappyCow" trust signal on restaurant cards for users who care about veg-friendly venues; blocked on HappyCow not having a public API
-
 ## Development
 
 ```bash
@@ -193,6 +186,59 @@ pnpm --filter @mealing-about/pipeline run analyze
 ```
 
 Stages can be run independently — useful for re-running a failed stage or iterating on a single step without repeating the full pipeline. Each stage reads from and writes back to Supabase, so they pick up where a previous run left off.
+
+### Database Migrations
+
+Migrations live in `supabase/migrations/` and are applied in order by filename.
+
+**Install the Supabase CLI** (one-time):
+
+```bash
+# via npm
+npm install -g supabase
+
+# or via Homebrew (macOS/Linux)
+brew install supabase/tap/supabase
+```
+
+**Link to your project** (one-time per machine):
+
+```bash
+# Find your project ref in the Supabase dashboard URL:
+# https://supabase.com/dashboard/project/<your-project-ref>
+supabase link --project-ref <your-project-ref>
+```
+
+**Push pending migrations to the remote database:**
+
+```bash
+supabase db push
+```
+
+This applies any migration files in `supabase/migrations/` that haven't been run yet. Safe to run multiple times — already-applied migrations are skipped.
+
+**Check migration status:**
+
+```bash
+supabase migration list
+```
+
+Shows which migrations have been applied to the remote database and which are pending.
+
+**Local development with a local Postgres instance:**
+
+```bash
+# Start a local Supabase stack (Postgres + Studio)
+supabase start
+
+# Apply all migrations to the local database
+supabase db reset
+
+# Stop the local stack
+supabase stop
+```
+
+`supabase db reset` wipes and recreates the local database from scratch, replaying all migrations. Useful for testing schema changes locally before pushing to production.
 
 ### Running the pipeline via GitHub Actions
 

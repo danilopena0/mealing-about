@@ -12,12 +12,17 @@ const DIET_TABS: { value: DietFilter; label: string }[] = [
 
 export function MenuFilter({ menuItems }: { menuItems: MenuItem[] }) {
   const [activeFilter, setActiveFilter] = useState<DietFilter>('all');
+  const [certainOnly, setCertainOnly] = useState(false);
 
   const filtered = menuItems.filter((item) => {
     if (activeFilter === 'all') return true;
-    if (activeFilter === 'vegan') return item.is_vegan;
-    if (activeFilter === 'vegetarian') return item.is_vegetarian;
-    if (activeFilter === 'gluten-free') return item.is_gluten_free;
+    const matchesDiet =
+      activeFilter === 'vegan' ? item.is_vegan :
+      activeFilter === 'vegetarian' ? item.is_vegetarian :
+      activeFilter === 'gluten-free' ? item.is_gluten_free :
+      true;
+    if (!matchesDiet) return false;
+    if (certainOnly && item.confidence !== 'certain') return false;
     return true;
   });
 
@@ -68,6 +73,30 @@ export function MenuFilter({ menuItems }: { menuItems: MenuItem[] }) {
           {filtered.length} item{filtered.length !== 1 ? 's' : ''}
         </span>
       </div>
+
+      {/* Confirmed-only toggle — only visible when a diet filter is active */}
+      {activeFilter !== 'all' && (
+        <label
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            marginBottom: '20px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            color: '#374151',
+            userSelect: 'none',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={certainOnly}
+            onChange={(e) => setCertainOnly(e.target.checked)}
+            style={{ width: '16px', height: '16px', accentColor: '#22c55e', cursor: 'pointer' }}
+          />
+          Confirmed items only
+        </label>
+      )}
 
       {/* Menu items list */}
       {filtered.length === 0 ? (
