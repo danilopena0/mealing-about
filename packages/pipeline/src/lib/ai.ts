@@ -17,6 +17,7 @@ const ANALYSIS_PROMPT = `You are a dietary menu analyzer. Analyze restaurant men
 For each item return:
 - name: item name
 - description: item description if available
+- category: "food" or "beverage". Beverages include drinks, cocktails, wine, beer, spirits, smoothies, juices, coffee, tea, soft drinks, and water. Everything else (including desserts) is "food".
 - labels: array of dietary labels that apply
   - type: "vegan" | "vegetarian" | "gluten-free"
   - confidence: "confirmed" (clearly stated) | "uncertain" (inferred)
@@ -169,23 +170,16 @@ async function analyzeWithClaude(menuText: string): Promise<AnalyzedMenuItem[]> 
 }
 
 export async function analyzeMenuText(menuText: string): Promise<AnalyzedMenuItem[]> {
-  // Try Perplexity first
+  // Try Perplexity first (using existing credits)
   try {
     return await analyzeWithPerplexity(menuText);
   } catch (err) {
     console.error('  Perplexity failed, trying Gemini:', (err as Error).message);
   }
 
-  // Try Gemini second
+  // Fall back to Gemini
   try {
     return await analyzeWithGemini(menuText);
-  } catch (err) {
-    console.error('  Gemini failed, trying Claude:', (err as Error).message);
-  }
-
-  // Try Claude as last resort
-  try {
-    return await analyzeWithClaude(menuText);
   } catch (err) {
     throw new Error(
       `All AI providers failed. Last error: ${(err as Error).message}`,

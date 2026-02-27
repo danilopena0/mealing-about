@@ -13,6 +13,7 @@ export interface DietaryInfo {
 export interface MenuItem {
   name: string;
   description?: string;
+  category: 'food' | 'beverage';
   labels: DietaryInfo[];
   modifications?: string[];
 }
@@ -30,6 +31,7 @@ For each menu item, you must:
 3. Mark confidence as "confirmed" if ingredients clearly indicate the diet compatibility, or "uncertain" if you're inferring based on typical recipes
 4. For uncertain items, provide an "askServer" suggestion for what to verify with restaurant staff
 5. Suggest modifications that could make items compatible with specific diets
+6. Classify each item as "food" or "beverage". Beverages include: drinks, cocktails, wine, beer, spirits, smoothies, juices, coffee, tea, soft drinks, and water. Everything else (including desserts) is "food".
 
 Guidelines:
 - Vegan: No animal products (meat, dairy, eggs, honey)
@@ -42,6 +44,7 @@ Return ONLY valid JSON matching this schema:
     {
       "name": "string",
       "description": "string (optional)",
+      "category": "food" | "beverage",
       "labels": [
         {
           "type": "vegan" | "vegetarian" | "gluten-free",

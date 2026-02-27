@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import pdfParse from 'pdf-parse';
 
 const ANALYSIS_PROMPT = `You are a dietary menu analyzer. Analyze restaurant menu text and identify menu items with dietary properties.
 
@@ -25,7 +26,7 @@ const MAX_TEXT_LENGTH = 12_000;
 
 async function fetchTextFromUrl(url: string): Promise<string> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 10_000);
+  const timer = setTimeout(() => controller.abort(), 15_000);
 
   let response: Response;
   try {
@@ -39,6 +40,25 @@ async function fetchTextFromUrl(url: string): Promise<string> {
 
   if (!response.ok) {
     throw new Error(`Could not fetch URL (${response.status})`);
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+  const isPdf = contentType.includes('application/pdf') || url.split('?')[0]!.toLowerCase().endsWith('.pdf');
+
+  if (isPdf) {
+    const buffer = Buffer.from(await response.arrayBuffer());
+    try {
+      const result = await pdfParse(buffer);
+      const text = result.text?.trim() ?? '';
+      if (text.length < 50) {
+        throw new Error('Could not extract text from this PDF. It may be a scanned image — try pasting the menu text directly.');
+      }
+      return text.length > MAX_TEXT_LENGTH ? text.slice(0, MAX_TEXT_LENGTH) : text;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg.startsWith('Could not extract')) throw err;
+      throw new Error('Could not read this PDF. Try pasting the menu text directly.');
+    }
   }
 
   const html = await response.text();
@@ -65,6 +85,7 @@ interface AnalyzedLabel {
 interface AnalyzedItem {
   name: string;
   description?: string;
+  category?: 'food' | 'beverage';
   labels: AnalyzedLabel[];
   modifications?: string[];
 }
@@ -85,7 +106,6 @@ async function analyzeWithPerplexity(menuText: string): Promise<AnalyzedItem[]> 
         { role: 'system', content: 'You are a JSON-only API. Return only valid JSON, no prose.' },
         { role: 'user', content: `${ANALYSIS_PROMPT}\n\nMenu text:\n${menuText}` },
       ],
-      response_format: { type: 'json_object' },
       max_tokens: 8000,
       temperature: 0.1,
     }),
@@ -225,6 +245,7 @@ function mapToMenuItemInsert(restaurantId: string, item: AnalyzedItem) {
     restaurant_id: restaurantId,
     name: item.name,
     description: item.description ?? null,
+    category: item.category ?? 'food',
     is_vegan: isVegan,
     is_vegetarian: isVegetarian,
     is_gluten_free: isGlutenFree,
@@ -234,28 +255,28 @@ function mapToMenuItemInsert(restaurantId: string, item: AnalyzedItem) {
   };
 }
 
-async function tryPersistRestaurant(url: string, items: AnalyzedItem[]): Promise<void> {
+async function tryPersistRestaurant(url: string, items: AnalyzedItem[]): Promise<{ slug: string; name: string } | null> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !serviceKey) return;
+  if (!supabaseUrl || !serviceKey) return null;
 
   let inputDomain: string;
   try {
     inputDomain = extractDomain(url);
   } catch {
-    return;
+    return null;
   }
 
   const query = domainToQuery(inputDomain);
-  if (!query) return;
+  if (!query) return null;
 
   const places = await searchPlacesByText(query);
   const place = findTrustedMatch(places, inputDomain);
-  if (!place) return;
+  if (!place) return null;
 
   const name = place.displayName?.text ?? '';
   const address = place.formattedAddress ?? '';
-  if (!name || !address) return;
+  if (!name || !address) return null;
 
   const db = createClient(supabaseUrl, serviceKey);
 
@@ -267,6 +288,8 @@ async function tryPersistRestaurant(url: string, items: AnalyzedItem[]): Promise
     .single();
 
   let restaurantId: string;
+
+  const slug: string = existing ? (existing.slug as string) : `${toSlug(name)}-${toSlug(cityFromAddress(address))}`;
 
   if (existing) {
     // Already in DB — refresh metadata but keep existing slug
@@ -292,10 +315,6 @@ async function tryPersistRestaurant(url: string, items: AnalyzedItem[]): Promise
       updated_at: new Date().toISOString(),
     }).eq('id', restaurantId);
   } else {
-    // New restaurant — generate slug and insert
-    const city = cityFromAddress(address);
-    const slug = `${toSlug(name)}-${toSlug(city)}`;
-
     const { data: inserted, error: insertError } = await db
       .from('restaurants')
       .insert({
@@ -322,7 +341,7 @@ async function tryPersistRestaurant(url: string, items: AnalyzedItem[]): Promise
       .select('id')
       .single();
 
-    if (insertError || !inserted) return;
+    if (insertError || !inserted) return null;
     restaurantId = inserted.id as string;
   }
 
@@ -332,6 +351,8 @@ async function tryPersistRestaurant(url: string, items: AnalyzedItem[]): Promise
   if (items.length > 0) {
     await db.from('menu_items').insert(items.map((item) => mapToMenuItemInsert(restaurantId, item)));
   }
+
+  return { slug, name };
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -357,11 +378,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Best-effort: try to save the restaurant to the database.
     // Errors are swallowed — the response is unaffected either way.
+    let saved: { slug: string; name: string } | null = null;
     if (type === 'url') {
-      await tryPersistRestaurant(data.trim(), items).catch(() => {});
+      saved = await tryPersistRestaurant(data.trim(), items).catch(() => null);
     }
 
-    return NextResponse.json({ items });
+    return NextResponse.json({ items, saved });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Analysis failed';
     return NextResponse.json({ error: message }, { status: 500 });

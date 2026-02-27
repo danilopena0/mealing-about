@@ -7,6 +7,8 @@ export interface RestaurantRow {
   neighborhood: string | null;
   latitude: number | null;
   longitude: number | null;
+  primary_type: string | null;
+  primary_type_display: string | null;
   website_uri: string | null;
   phone: string | null;
   rating: number | null;
@@ -28,6 +30,7 @@ export interface MenuItemInsert {
   restaurant_id: string;
   name: string;
   description: string | null;
+  category: 'food' | 'beverage';
   is_vegan: boolean;
   is_vegetarian: boolean;
   is_gluten_free: boolean;
@@ -39,6 +42,7 @@ export interface MenuItemInsert {
 export interface AnalyzedMenuItem {
   name: string;
   description?: string;
+  category?: 'food' | 'beverage';
   labels: Array<{
     type: 'vegan' | 'vegetarian' | 'gluten-free';
     confidence: 'confirmed' | 'uncertain';

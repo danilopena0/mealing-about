@@ -8,6 +8,15 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+function formatAnalyzedAt(iso: string): string {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days} days ago`;
+  const months = Math.floor(days / 30);
+  return months === 1 ? '1 month ago' : `${months} months ago`;
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const result = await getRestaurant(slug);
@@ -71,24 +80,40 @@ export default async function RestaurantPage({ params }: PageProps) {
           />
         )}
         <div style={{ padding: '28px' }}>
-          {r.neighborhood && (
-            <span
-              style={{
-                display: 'inline-block',
-                fontSize: '12px',
-                fontWeight: 600,
-                color: '#6b7280',
-                background: '#f3f4f6',
-                borderRadius: '6px',
-                padding: '3px 8px',
-                marginBottom: '10px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}
-            >
-              {r.neighborhood}
-            </span>
-          )}
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
+            {r.neighborhood && (
+              <span
+                style={{
+                  display: 'inline-block',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#6b7280',
+                  background: '#f3f4f6',
+                  borderRadius: '6px',
+                  padding: '3px 8px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}
+              >
+                {r.neighborhood}
+              </span>
+            )}
+            {r.primary_type_display && (
+              <span
+                style={{
+                  display: 'inline-block',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#b45309',
+                  background: '#fffbeb',
+                  borderRadius: '6px',
+                  padding: '3px 8px',
+                }}
+              >
+                {r.primary_type_display}
+              </span>
+            )}
+          </div>
 
           <h1
             style={{
@@ -210,16 +235,16 @@ export default async function RestaurantPage({ params }: PageProps) {
           boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
         }}
       >
-        <h2
-          style={{
-            fontSize: '20px',
-            fontWeight: 700,
-            margin: '0 0 20px',
-            color: '#111827',
-          }}
-        >
-          Menu items
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 700, margin: 0, color: '#111827' }}>
+            Menu items
+          </h2>
+          {r.last_analyzed_at && (
+            <span style={{ fontSize: '13px', color: '#9ca3af' }}>
+              Updated {formatAnalyzedAt(r.last_analyzed_at)}
+            </span>
+          )}
+        </div>
         <MenuFilter menuItems={menuItems} />
       </div>
     </div>

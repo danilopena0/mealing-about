@@ -41,33 +41,42 @@ export async function main(): Promise<void> {
 
       for (const place of filtered) {
         // Reuse existing slug on re-runs to avoid drift (e.g. big-bowl-2, big-bowl-3)
+        const isNew = !existingSlugByPlaceId.has(place.placeId);
         const slug =
           existingSlugByPlaceId.get(place.placeId) ??
           generateUniqueSlug(place.name, neighborhood.name, existingSlugs);
         existingSlugs.add(slug);
 
-        const { error } = await supabase.from('restaurants').upsert(
-          {
-            place_id: place.placeId,
-            name: place.name,
-            slug,
-            address: place.address,
-            neighborhood: neighborhood.name,
-            latitude: place.latitude,
-            longitude: place.longitude,
-            rating: place.rating,
-            user_rating_count: place.userRatingCount,
-            price_level: place.priceLevel,
-            photo_url: place.photoUrl,
-            website_uri: place.websiteUri,
-            phone: place.phone,
-            serves_vegetarian_food: place.servesVegetarianFood,
-            editorial_summary: place.editorialSummary,
-            analysis_status: place.websiteUri ? 'pending' : 'failed',
-            analysis_error: place.websiteUri ? null : 'No website found',
-            updated_at: new Date().toISOString(),
-          },
-          {
+        // Metadata fields are always refreshed from Google Places.
+        // analysis_status is only set for NEW restaurants — existing ones
+        // preserve their current status so in-progress work isn't interrupted.
+        const upsertData: Record<string, unknown> = {
+          place_id: place.placeId,
+          name: place.name,
+          slug,
+          address: place.address,
+          neighborhood: neighborhood.name,
+          latitude: place.latitude,
+          longitude: place.longitude,
+          primary_type: place.primaryType,
+          primary_type_display: place.primaryTypeDisplay,
+          rating: place.rating,
+          user_rating_count: place.userRatingCount,
+          price_level: place.priceLevel,
+          photo_url: place.photoUrl,
+          website_uri: place.websiteUri,
+          phone: place.phone,
+          serves_vegetarian_food: place.servesVegetarianFood,
+          editorial_summary: place.editorialSummary,
+          updated_at: new Date().toISOString(),
+        };
+
+        if (isNew) {
+          upsertData.analysis_status = place.websiteUri ? 'pending' : 'failed';
+          upsertData.analysis_error = place.websiteUri ? null : 'No website found';
+        }
+
+        const { error } = await supabase.from('restaurants').upsert(upsertData, {
             onConflict: 'place_id',
             ignoreDuplicates: false,
           },
@@ -89,6 +98,33 @@ export async function main(): Promise<void> {
 
     // Rate limit: 200ms between neighborhood searches
     await sleep(200);
+  }
+
+  // Re-queue restaurants whose menu analysis is older than 90 days.
+  // Resetting to 'pending' sends them through stages 3-5 on the next run.
+  const staleDate = new Date();
+  staleDate.setDate(staleDate.getDate() - 90);
+
+  const { data: stale, error: staleError } = await supabase
+    .from('restaurants')
+    .select('id, name')
+    .eq('analysis_status', 'analyzed')
+    .lt('last_analyzed_at', staleDate.toISOString());
+
+  if (staleError) {
+    console.error('Failed to query stale restaurants:', staleError.message);
+  } else if (stale && stale.length > 0) {
+    const staleIds = stale.map((r) => r.id as string);
+    const { error: resetError } = await supabase
+      .from('restaurants')
+      .update({ analysis_status: 'pending', updated_at: new Date().toISOString() })
+      .in('id', staleIds);
+
+    if (resetError) {
+      console.error('Failed to reset stale restaurants:', resetError.message);
+    } else {
+      console.log(`↺ Re-queued ${stale.length} restaurants with data older than 90 days`);
+    }
   }
 
   console.log('Stage 1 complete.');

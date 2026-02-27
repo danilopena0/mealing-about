@@ -4,6 +4,10 @@ export interface RestaurantSummary {
   name: string;
   address: string;
   neighborhood: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  primary_type: string | null;
+  primary_type_display: string | null;
   rating: number | null;
   user_rating_count: number | null;
   price_level: number | null;
@@ -11,6 +15,7 @@ export interface RestaurantSummary {
   editorial_summary: string | null;
   photo_url: string | null;
   website_uri: string | null;
+  last_analyzed_at: string | null;
   vegan_count: number;
   vegetarian_count: number;
   gluten_free_count: number;
@@ -21,6 +26,7 @@ export interface MenuItem {
   id: string;
   name: string;
   description: string | null;
+  category: 'food' | 'beverage';
   is_vegan: boolean;
   is_vegetarian: boolean;
   is_gluten_free: boolean;

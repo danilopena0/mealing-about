@@ -10,6 +10,8 @@ const PLACES_FIELD_MASK = [
   'places.priceLevel',
   'places.currentOpeningHours.openNow',
   'places.photos',
+  'places.primaryType',
+  'places.primaryTypeDisplayName',
 ].join(',');
 
 function placesHeaders(): Record<string, string> {
@@ -41,6 +43,8 @@ interface PlaceResult {
     openNow: boolean;
   };
   photos?: PlacePhoto[];
+  primaryType?: string;
+  primaryTypeDisplayName?: { text: string; languageCode: string };
 }
 
 export interface Restaurant {
@@ -52,6 +56,8 @@ export interface Restaurant {
   priceLevel?: number;
   isOpen?: boolean;
   photoUrl?: string;
+  cuisineType?: string;
+  cuisineTypeDisplay?: string;
 }
 
 const PRICE_LEVEL_MAP: Record<string, number> = {
@@ -131,6 +137,8 @@ export async function searchNearbyRestaurants(
     priceLevel: priceLevelToNumber(place.priceLevel),
     isOpen: place.currentOpeningHours?.openNow,
     photoUrl: place.photos?.[0] ? getPhotoUrl(place.photos[0].name) : undefined,
+    cuisineType: place.primaryType,
+    cuisineTypeDisplay: place.primaryTypeDisplayName?.text,
   }));
 }
 
@@ -159,5 +167,7 @@ export async function searchByText(query: string): Promise<Restaurant[]> {
     priceLevel: priceLevelToNumber(place.priceLevel),
     isOpen: place.currentOpeningHours?.openNow,
     photoUrl: place.photos?.[0] ? getPhotoUrl(place.photos[0].name) : undefined,
+    cuisineType: place.primaryType,
+    cuisineTypeDisplay: place.primaryTypeDisplayName?.text,
   }));
 }

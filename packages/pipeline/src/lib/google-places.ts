@@ -23,6 +23,8 @@ interface NearbyRestaurant {
   phone: string | null;
   servesVegetarianFood: boolean | null;
   editorialSummary: string | null;
+  primaryType: string | null;
+  primaryTypeDisplay: string | null;
 }
 
 interface PlaceDetails {
@@ -39,6 +41,8 @@ interface PlaceDetails {
   servesVegetarianFood: boolean | null;
   editorialSummary: string | null;
   photoUrl: string | null;
+  primaryType: string | null;
+  primaryTypeDisplay: string | null;
 }
 
 function extractPhotoUrl(photos: unknown[]): string | null {
@@ -65,7 +69,7 @@ export async function searchNearbyRestaurants(
         'Content-Type': 'application/json',
         'X-Goog-Api-Key': API_KEY,
         'X-Goog-FieldMask':
-          'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.priceLevel,places.photos,places.websiteUri,places.nationalPhoneNumber,places.servesVegetarianFood,places.editorialSummary',
+          'places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.userRatingCount,places.priceLevel,places.photos,places.websiteUri,places.nationalPhoneNumber,places.servesVegetarianFood,places.editorialSummary,places.primaryType,places.primaryTypeDisplayName',
       },
       body: JSON.stringify({
         includedTypes: ['restaurant'],
@@ -104,6 +108,8 @@ export async function searchNearbyRestaurants(
       nationalPhoneNumber?: string;
       servesVegetarianFood?: boolean;
       editorialSummary?: { text?: string };
+      primaryType?: string;
+      primaryTypeDisplayName?: { text?: string };
     };
 
     return {
@@ -120,6 +126,8 @@ export async function searchNearbyRestaurants(
       phone: p.nationalPhoneNumber ?? null,
       servesVegetarianFood: p.servesVegetarianFood ?? null,
       editorialSummary: p.editorialSummary?.text ?? null,
+      primaryType: p.primaryType ?? null,
+      primaryTypeDisplay: p.primaryTypeDisplayName?.text ?? null,
     };
   });
 }
@@ -136,7 +144,7 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
       headers: {
         'X-Goog-Api-Key': API_KEY,
         'X-Goog-FieldMask':
-          'id,displayName,formattedAddress,location,rating,userRatingCount,priceLevel,websiteUri,nationalPhoneNumber,servesVegetarianFood,editorialSummary,photos',
+          'id,displayName,formattedAddress,location,rating,userRatingCount,priceLevel,websiteUri,nationalPhoneNumber,servesVegetarianFood,editorialSummary,photos,primaryType,primaryTypeDisplayName',
       },
     });
   } finally {
@@ -162,6 +170,8 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
     servesVegetarianFood?: boolean;
     editorialSummary?: { text?: string };
     photos?: unknown[];
+    primaryType?: string;
+    primaryTypeDisplayName?: { text?: string };
   };
 
   return {
@@ -178,5 +188,7 @@ export async function getPlaceDetails(placeId: string): Promise<PlaceDetails> {
     servesVegetarianFood: p.servesVegetarianFood ?? null,
     editorialSummary: p.editorialSummary?.text ?? null,
     photoUrl: extractPhotoUrl(p.photos ?? []),
+    primaryType: p.primaryType ?? null,
+    primaryTypeDisplay: p.primaryTypeDisplayName?.text ?? null,
   };
 }

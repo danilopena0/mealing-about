@@ -13,8 +13,12 @@ const DIET_TABS: { value: DietFilter; label: string }[] = [
 export function MenuFilter({ menuItems }: { menuItems: MenuItem[] }) {
   const [activeFilter, setActiveFilter] = useState<DietFilter>('all');
   const [certainOnly, setCertainOnly] = useState(false);
+  const [hideBeverages, setHideBeverages] = useState(true);
+
+  const hasBeverages = menuItems.some((item) => item.category === 'beverage');
 
   const filtered = menuItems.filter((item) => {
+    if (hideBeverages && item.category === 'beverage') return false;
     if (activeFilter === 'all') return true;
     const matchesDiet =
       activeFilter === 'vegan' ? item.is_vegan :
@@ -74,28 +78,52 @@ export function MenuFilter({ menuItems }: { menuItems: MenuItem[] }) {
         </span>
       </div>
 
-      {/* Confirmed-only toggle — only visible when a diet filter is active */}
-      {activeFilter !== 'all' && (
-        <label
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            marginBottom: '20px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            color: '#374151',
-            userSelect: 'none',
-          }}
-        >
-          <input
-            type="checkbox"
-            checked={certainOnly}
-            onChange={(e) => setCertainOnly(e.target.checked)}
-            style={{ width: '16px', height: '16px', accentColor: '#22c55e', cursor: 'pointer' }}
-          />
-          Confirmed items only
-        </label>
+      {/* Toggles row */}
+      {(activeFilter !== 'all' || hasBeverages) && (
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginBottom: '20px' }}>
+          {activeFilter !== 'all' && (
+            <label
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                color: '#374151',
+                userSelect: 'none',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={certainOnly}
+                onChange={(e) => setCertainOnly(e.target.checked)}
+                style={{ width: '16px', height: '16px', accentColor: '#22c55e', cursor: 'pointer' }}
+              />
+              Confirmed items only
+            </label>
+          )}
+          {hasBeverages && (
+            <label
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                color: '#374151',
+                userSelect: 'none',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={hideBeverages}
+                onChange={(e) => setHideBeverages(e.target.checked)}
+                style={{ width: '16px', height: '16px', accentColor: '#22c55e', cursor: 'pointer' }}
+              />
+              Hide beverages
+            </label>
+          )}
+        </div>
       )}
 
       {/* Menu items list */}

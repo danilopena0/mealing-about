@@ -1,16 +1,24 @@
 import { supabase } from './supabase';
+import { calculateDistance } from './distance';
 import type { RestaurantSummary, MenuItem, DietFilter } from './types';
 
 export async function getRestaurants(params: {
   neighborhood?: string;
+  cuisineType?: string;
   diet?: DietFilter;
   search?: string;
   page?: number;
   limit?: number;
+  userLat?: number;
+  userLng?: number;
 }): Promise<{ restaurants: RestaurantSummary[]; total: number }> {
-  const { neighborhood, diet, search, page = 1, limit = 20 } = params;
-  const clampedLimit = Math.min(50, Math.max(1, limit));
-  const clampedPage = Math.max(1, page);
+  const { neighborhood, cuisineType, diet, search, page = 1, limit = 20, userLat, userLng } = params;
+  const nearMe = userLat != null && userLng != null;
+
+  // When sorting by distance we fetch more to sort in-memory; pagination is
+  // disabled in that mode so we just return the closest results.
+  const clampedLimit = nearMe ? 100 : Math.min(50, Math.max(1, limit));
+  const clampedPage = nearMe ? 1 : Math.max(1, page);
 
   let query = supabase
     .from('restaurants_with_counts')
@@ -19,6 +27,10 @@ export async function getRestaurants(params: {
 
   if (neighborhood) {
     query = query.eq('neighborhood', neighborhood);
+  }
+
+  if (cuisineType) {
+    query = query.eq('primary_type', cuisineType);
   }
 
   if (search) {
@@ -35,9 +47,11 @@ export async function getRestaurants(params: {
     }
   }
 
-  query = query
-    .order('rating', { ascending: false, nullsFirst: false })
-    .range((clampedPage - 1) * clampedLimit, clampedPage * clampedLimit - 1);
+  if (!nearMe) {
+    query = query
+      .order('rating', { ascending: false, nullsFirst: false })
+      .range((clampedPage - 1) * clampedLimit, clampedPage * clampedLimit - 1);
+  }
 
   const { data, error, count } = await query;
 
@@ -46,9 +60,24 @@ export async function getRestaurants(params: {
     return { restaurants: [], total: 0 };
   }
 
+  let restaurants = (data as RestaurantSummary[]) ?? [];
+
+  if (nearMe) {
+    // Attach distance and sort by proximity
+    restaurants = restaurants
+      .filter((r) => r.latitude != null && r.longitude != null)
+      .map((r) => ({
+        ...r,
+        _distance: calculateDistance(userLat, userLng, r.latitude!, r.longitude!),
+      }))
+      .sort((a, b) => (a as RestaurantSummary & { _distance: number })._distance -
+                      (b as RestaurantSummary & { _distance: number })._distance)
+      .slice(0, 50);
+  }
+
   return {
-    restaurants: (data as RestaurantSummary[]) ?? [],
-    total: count ?? 0,
+    restaurants,
+    total: nearMe ? restaurants.length : (count ?? 0),
   };
 }
 
@@ -81,6 +110,33 @@ export async function getRestaurant(slug: string): Promise<{
     restaurant: restaurant as RestaurantSummary,
     menuItems: (menuItems as MenuItem[]) ?? [],
   };
+}
+
+export async function getCuisineTypes(): Promise<Array<{ type: string; display: string }>> {
+  const { data, error } = await supabase
+    .from('restaurants')
+    .select('primary_type, primary_type_display')
+    .eq('analysis_status', 'analyzed')
+    .not('primary_type', 'is', null)
+    .order('primary_type');
+
+  if (error || !data) {
+    console.error('getCuisineTypes error:', error);
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const result: Array<{ type: string; display: string }> = [];
+  for (const row of data) {
+    if (row.primary_type && !seen.has(row.primary_type)) {
+      seen.add(row.primary_type);
+      result.push({
+        type: row.primary_type as string,
+        display: (row.primary_type_display as string) ?? row.primary_type as string,
+      });
+    }
+  }
+  return result.sort((a, b) => a.display.localeCompare(b.display));
 }
 
 export async function getNeighborhoods(): Promise<string[]> {

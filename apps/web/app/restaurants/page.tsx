@@ -1,5 +1,7 @@
 import Link from 'next/link';
-import { getRestaurants, getNeighborhoods } from '@/lib/data';
+import { getRestaurants, getNeighborhoods, getCuisineTypes } from '@/lib/data';
+import { calculateDistance, formatDistance } from '@/lib/distance';
+import { NearMeButton } from './NearMeButton';
 import type { DietFilter, RestaurantSummary } from '@/lib/types';
 
 const DIET_OPTIONS: { value: DietFilter; label: string }[] = [
@@ -12,25 +14,41 @@ const DIET_OPTIONS: { value: DietFilter; label: string }[] = [
 const ITEMS_PER_PAGE = 20;
 
 interface PageProps {
-  searchParams: Promise<{ neighborhood?: string; diet?: string; page?: string; q?: string }>;
+  searchParams: Promise<{
+    neighborhood?: string;
+    cuisine?: string;
+    diet?: string;
+    page?: string;
+    q?: string;
+    lat?: string;
+    lng?: string;
+  }>;
 }
 
 export default async function RestaurantsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const neighborhood = params.neighborhood;
+  const cuisineType = params.cuisine;
   const diet = (params.diet as DietFilter) || 'all';
   const page = Math.max(1, parseInt(params.page ?? '1', 10) || 1);
   const search = params.q?.trim() || undefined;
+  const userLat = params.lat ? parseFloat(params.lat) : undefined;
+  const userLng = params.lng ? parseFloat(params.lng) : undefined;
+  const nearMe = userLat != null && userLng != null;
 
-  const [{ restaurants, total }, neighborhoods] = await Promise.all([
+  const [{ restaurants, total }, neighborhoods, cuisineTypes] = await Promise.all([
     getRestaurants({
       neighborhood,
+      cuisineType,
       diet: diet === 'all' ? undefined : diet,
       search,
       page,
       limit: ITEMS_PER_PAGE,
+      userLat,
+      userLng,
     }),
     getNeighborhoods(),
+    getCuisineTypes(),
   ]);
 
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
@@ -38,8 +56,11 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
   function buildUrl(overrides: Record<string, string | undefined>): string {
     const merged = {
       neighborhood,
+      cuisine: cuisineType,
       diet: diet === 'all' ? undefined : diet,
       q: search,
+      lat: userLat != null ? String(userLat) : undefined,
+      lng: userLng != null ? String(userLng) : undefined,
       page: page > 1 ? String(page) : undefined,
       ...overrides,
     };
@@ -50,11 +71,27 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
     return qs ? `/restaurants?${qs}` : '/restaurants';
   }
 
+  // Query string without lat/lng/page — passed to NearMeButton so it can
+  // preserve active filters when toggling location on or off.
+  const baseParams = Object.entries({
+    neighborhood,
+    cuisine: cuisineType,
+    diet: diet === 'all' ? undefined : diet,
+    q: search,
+  })
+    .filter(([, v]) => v !== undefined && v !== '')
+    .map(([k, v]) => `${k}=${encodeURIComponent(v!)}`)
+    .join('&');
+
   const pageTitle = search
     ? `Results for "${search}"`
-    : neighborhood
-      ? `Restaurants in ${neighborhood}`
-      : 'Browse restaurants';
+    : nearMe
+      ? 'Restaurants near you'
+      : neighborhood
+        ? `Restaurants in ${neighborhood}`
+        : cuisineType
+          ? `${cuisineTypes.find((c) => c.type === cuisineType)?.display ?? cuisineType}`
+          : 'Browse restaurants';
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
@@ -78,8 +115,11 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
       {/* Search bar */}
       <form method="GET" action="/restaurants" style={{ marginBottom: '20px' }}>
         {neighborhood && <input type="hidden" name="neighborhood" value={neighborhood} />}
+        {cuisineType && <input type="hidden" name="cuisine" value={cuisineType} />}
         {diet !== 'all' && <input type="hidden" name="diet" value={diet} />}
-        <div style={{ display: 'flex', gap: '8px', maxWidth: '480px' }}>
+        {userLat != null && <input type="hidden" name="lat" value={String(userLat)} />}
+        {userLng != null && <input type="hidden" name="lng" value={String(userLng)} />}
+        <div style={{ display: 'flex', gap: '8px', maxWidth: '600px' }}>
           <input
             type="text"
             name="q"
@@ -132,6 +172,7 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
               Clear ✕
             </Link>
           )}
+          <NearMeButton active={nearMe} baseParams={baseParams} />
         </div>
       </form>
 
@@ -171,6 +212,55 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
             );
           })}
         </div>
+
+        {cuisineTypes.length > 0 && (
+          <>
+            <div style={{ width: '1px', height: '32px', background: '#e5e7eb', margin: '0 4px' }} />
+            {/* Cuisine type pills */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <Link
+                href={buildUrl({ cuisine: undefined, page: undefined })}
+                style={{
+                  display: 'inline-block',
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  border: '2px solid #f59e0b',
+                  background: !cuisineType ? '#f59e0b' : '#ffffff',
+                  color: !cuisineType ? '#ffffff' : '#b45309',
+                  textDecoration: 'none',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                All cuisines
+              </Link>
+              {cuisineTypes.map((c) => {
+                const active = cuisineType === c.type;
+                return (
+                  <Link
+                    key={c.type}
+                    href={buildUrl({ cuisine: c.type, page: undefined })}
+                    style={{
+                      display: 'inline-block',
+                      padding: '8px 16px',
+                      borderRadius: '20px',
+                      border: '2px solid #f59e0b',
+                      background: active ? '#f59e0b' : '#ffffff',
+                      color: active ? '#ffffff' : '#b45309',
+                      textDecoration: 'none',
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {c.display}
+                  </Link>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         {neighborhoods.length > 0 && (
           <>
@@ -263,9 +353,13 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
               marginBottom: '40px',
             }}
           >
-            {restaurants.map((r) => (
-              <RestaurantCard key={r.id} restaurant={r} />
-            ))}
+            {restaurants.map((r) => {
+              const distance =
+                nearMe && r.latitude != null && r.longitude != null
+                  ? calculateDistance(userLat!, userLng!, r.latitude, r.longitude)
+                  : undefined;
+              return <RestaurantCard key={r.id} restaurant={r} distance={distance} />;
+            })}
           </div>
 
           {/* Pagination */}
@@ -348,7 +442,7 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
   );
 }
 
-function RestaurantCard({ restaurant: r }: { restaurant: RestaurantSummary }) {
+function RestaurantCard({ restaurant: r, distance }: { restaurant: RestaurantSummary; distance?: number }) {
   const priceLabel = r.price_level != null ? '$'.repeat(Math.max(1, r.price_level)) : null;
 
   return (
@@ -375,24 +469,55 @@ function RestaurantCard({ restaurant: r }: { restaurant: RestaurantSummary }) {
         />
       )}
       <div style={{ padding: '20px' }}>
-        {r.neighborhood && (
-          <span
-            style={{
-              display: 'inline-block',
-              fontSize: '12px',
-              fontWeight: 600,
-              color: '#6b7280',
-              background: '#f3f4f6',
-              borderRadius: '6px',
-              padding: '3px 8px',
-              marginBottom: '8px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}
-          >
-            {r.neighborhood}
-          </span>
-        )}
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+          {r.neighborhood && (
+            <span
+              style={{
+                display: 'inline-block',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: '#6b7280',
+                background: '#f3f4f6',
+                borderRadius: '6px',
+                padding: '3px 8px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}
+            >
+              {r.neighborhood}
+            </span>
+          )}
+          {r.primary_type_display && (
+            <span
+              style={{
+                display: 'inline-block',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: '#b45309',
+                background: '#fffbeb',
+                borderRadius: '6px',
+                padding: '3px 8px',
+              }}
+            >
+              {r.primary_type_display}
+            </span>
+          )}
+          {distance != null && (
+            <span
+              style={{
+                display: 'inline-block',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: '#0369a1',
+                background: '#f0f9ff',
+                borderRadius: '6px',
+                padding: '3px 8px',
+              }}
+            >
+              {formatDistance(distance)}
+            </span>
+          )}
+        </div>
 
         <h3
           style={{

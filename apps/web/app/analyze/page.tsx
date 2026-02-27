@@ -36,6 +36,7 @@ export default function AnalyzePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<AnalyzedItem[] | null>(null);
+  const [saved, setSaved] = useState<{ slug: string; name: string } | null>(null);
   const [filter, setFilter] = useState<DietFilter>('all');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,11 +54,13 @@ export default function AnalyzePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: mode, data }),
       });
-      const json = await res.json() as { items?: AnalyzedItem[]; error?: string };
+      const json = await res.json() as { items?: AnalyzedItem[]; saved?: { slug: string; name: string } | null; error?: string };
       if (!res.ok || json.error) throw new Error(json.error ?? 'Analysis failed');
       setItems(json.items ?? []);
+      setSaved(json.saved ?? null);
       setFilter('all');
     } catch (err) {
+      setSaved(null);
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setIsLoading(false);
@@ -208,12 +211,39 @@ export default function AnalyzePage() {
               </span>
             </h2>
             <button
-              onClick={() => { setItems(null); setUrl(''); setText(''); }}
+              onClick={() => { setItems(null); setSaved(null); setUrl(''); setText(''); }}
               style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '14px' }}
             >
               ✕ Clear
             </button>
           </div>
+
+          {/* Saved banner */}
+          {saved && (
+            <a
+              href={`/restaurants/${saved.slug}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                padding: '14px 18px',
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: '10px',
+                marginBottom: '20px',
+                textDecoration: 'none',
+                color: '#15803d',
+              }}
+            >
+              <span style={{ fontSize: '14px', fontWeight: 600 }}>
+                ✓ Saved — <span style={{ fontWeight: 700 }}>{saved.name}</span> is now in the directory
+              </span>
+              <span style={{ fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                View restaurant →
+              </span>
+            </a>
+          )}
 
           {/* Diet filter pills */}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>

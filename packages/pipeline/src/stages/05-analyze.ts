@@ -26,6 +26,7 @@ function mapItemToInsert(
     restaurant_id: restaurantId,
     name: item.name,
     description: item.description ?? null,
+    category: item.category ?? 'food',
     is_vegan: isVegan,
     is_vegetarian: isVegetarian,
     is_gluten_free: isGlutenFree,
