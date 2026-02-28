@@ -32,7 +32,7 @@ export async function extractPdfText(pdfUrl: string): Promise<string | null> {
 
     // Fall back to Gemini Vision for scanned/image PDFs
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     const base64 = buffer.toString('base64');
 
