@@ -13,12 +13,11 @@ const DIET_TABS: { value: DietFilter; label: string }[] = [
 export function MenuFilter({ menuItems }: { menuItems: MenuItem[] }) {
   const [activeFilter, setActiveFilter] = useState<DietFilter>('all');
   const [certainOnly, setCertainOnly] = useState(false);
-  const [hideBeverages, setHideBeverages] = useState(true);
 
-  const hasBeverages = menuItems.some((item) => item.category === 'beverage');
+  const foodItems = menuItems.filter((item) => item.category !== 'beverage');
+  const beverages = menuItems.filter((item) => item.category === 'beverage');
 
-  const filtered = menuItems.filter((item) => {
-    if (hideBeverages && item.category === 'beverage') return false;
+  const filteredFood = foodItems.filter((item) => {
     if (activeFilter === 'all') return true;
     const matchesDiet =
       activeFilter === 'vegan' ? item.is_vegan :
@@ -32,15 +31,13 @@ export function MenuFilter({ menuItems }: { menuItems: MenuItem[] }) {
 
   return (
     <div>
-      {/* Filter tabs */}
+      {/* Diet filter tabs */}
       <div
         style={{
           display: 'flex',
-          gap: '8px',
-          flexWrap: 'wrap',
-          marginBottom: '24px',
-          borderBottom: '1px solid #e5e7eb',
-          paddingBottom: '16px',
+          borderBottom: '2px solid #e5e7eb',
+          marginBottom: '20px',
+          overflowX: 'auto',
         }}
       >
         {DIET_TABS.map((tab) => {
@@ -50,16 +47,17 @@ export function MenuFilter({ menuItems }: { menuItems: MenuItem[] }) {
               key={tab.value}
               onClick={() => setActiveFilter(tab.value)}
               style={{
-                padding: '8px 18px',
-                borderRadius: '20px',
-                border: '2px solid #22c55e',
-                background: active ? '#22c55e' : '#ffffff',
-                color: active ? '#ffffff' : '#16a34a',
-                fontWeight: 600,
+                padding: '9px 16px',
+                fontWeight: active ? 700 : 500,
+                color: active ? '#16a34a' : '#6b7280',
+                background: 'none',
+                border: 'none',
+                borderBottom: `2px solid ${active ? '#22c55e' : 'transparent'}`,
+                marginBottom: '-2px',
+                whiteSpace: 'nowrap',
                 fontSize: '14px',
                 cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'background 0.15s, color 0.15s',
+                transition: 'color 0.15s, border-color 0.15s',
               }}
             >
               {tab.label}
@@ -70,64 +68,43 @@ export function MenuFilter({ menuItems }: { menuItems: MenuItem[] }) {
           style={{
             marginLeft: 'auto',
             alignSelf: 'center',
-            fontSize: '14px',
-            color: '#6b7280',
+            fontSize: '13px',
+            color: '#9ca3af',
+            paddingRight: '4px',
+            whiteSpace: 'nowrap',
           }}
         >
-          {filtered.length} item{filtered.length !== 1 ? 's' : ''}
+          {filteredFood.length} food item{filteredFood.length !== 1 ? 's' : ''}
         </span>
       </div>
 
-      {/* Toggles row */}
-      {(activeFilter !== 'all' || hasBeverages) && (
-        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginBottom: '20px' }}>
-          {activeFilter !== 'all' && (
-            <label
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                color: '#374151',
-                userSelect: 'none',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={certainOnly}
-                onChange={(e) => setCertainOnly(e.target.checked)}
-                style={{ width: '16px', height: '16px', accentColor: '#22c55e', cursor: 'pointer' }}
-              />
-              Confirmed items only
-            </label>
-          )}
-          {hasBeverages && (
-            <label
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                color: '#374151',
-                userSelect: 'none',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={hideBeverages}
-                onChange={(e) => setHideBeverages(e.target.checked)}
-                style={{ width: '16px', height: '16px', accentColor: '#22c55e', cursor: 'pointer' }}
-              />
-              Hide beverages
-            </label>
-          )}
+      {/* Confirmed only toggle */}
+      {activeFilter !== 'all' && (
+        <div style={{ marginBottom: '16px' }}>
+          <label
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              color: '#374151',
+              userSelect: 'none',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={certainOnly}
+              onChange={(e) => setCertainOnly(e.target.checked)}
+              style={{ width: '16px', height: '16px', accentColor: '#22c55e', cursor: 'pointer' }}
+            />
+            Confirmed items only
+          </label>
         </div>
       )}
 
-      {/* Menu items list */}
-      {filtered.length === 0 ? (
+      {/* Food items */}
+      {filteredFood.length === 0 ? (
         <div
           style={{
             textAlign: 'center',
@@ -142,9 +119,44 @@ export function MenuFilter({ menuItems }: { menuItems: MenuItem[] }) {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {filtered.map((item) => (
+          {filteredFood.map((item) => (
             <MenuItemCard key={item.id} item={item} />
           ))}
+        </div>
+      )}
+
+      {/* Beverages section */}
+      {beverages.length > 0 && (
+        <div style={{ marginTop: '40px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: '10px',
+              borderTop: '1px solid #e5e7eb',
+              paddingTop: '28px',
+              marginBottom: '16px',
+            }}
+          >
+            <h3
+              style={{
+                margin: 0,
+                fontSize: '16px',
+                fontWeight: 700,
+                color: '#374151',
+              }}
+            >
+              🥤 Beverages
+            </h3>
+            <span style={{ fontSize: '13px', color: '#9ca3af' }}>
+              {beverages.length} item{beverages.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {beverages.map((item) => (
+              <MenuItemCard key={item.id} item={item} />
+            ))}
+          </div>
         </div>
       )}
     </div>

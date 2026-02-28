@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getRestaurants, getNeighborhoods, getCuisineTypes } from '@/lib/data';
 import { calculateDistance, formatDistance } from '@/lib/distance';
 import { NearMeButton } from './NearMeButton';
+import { RefinePanel } from './RefinePanel';
 import type { DietFilter, RestaurantSummary } from '@/lib/types';
 
 const DIET_OPTIONS: { value: DietFilter; label: string }[] = [
@@ -71,8 +72,6 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
     return qs ? `/restaurants?${qs}` : '/restaurants';
   }
 
-  // Query string without lat/lng/page — passed to NearMeButton so it can
-  // preserve active filters when toggling location on or off.
   const baseParams = Object.entries({
     neighborhood,
     cuisine: cuisineType,
@@ -93,6 +92,8 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
           ? `${cuisineTypes.find((c) => c.type === cuisineType)?.display ?? cuisineType}`
           : 'Browse restaurants';
 
+  const refineActiveCount = [search, cuisineType, neighborhood, nearMe ? 'near' : undefined].filter(Boolean).length;
+
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
       <h1
@@ -112,124 +113,137 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
         )}
       </h1>
 
-      {/* Search bar */}
-      <form method="GET" action="/restaurants" style={{ marginBottom: '20px' }}>
-        {neighborhood && <input type="hidden" name="neighborhood" value={neighborhood} />}
-        {cuisineType && <input type="hidden" name="cuisine" value={cuisineType} />}
-        {diet !== 'all' && <input type="hidden" name="diet" value={diet} />}
-        {userLat != null && <input type="hidden" name="lat" value={String(userLat)} />}
-        {userLng != null && <input type="hidden" name="lng" value={String(userLng)} />}
-        <div style={{ display: 'flex', gap: '8px', maxWidth: '600px' }}>
-          <input
-            type="text"
-            name="q"
-            defaultValue={search ?? ''}
-            placeholder="Search by restaurant name..."
-            style={{
-              flex: 1,
-              height: '42px',
-              border: '1px solid #d1d5db',
-              borderRadius: '8px',
-              paddingInline: '14px',
-              fontSize: '15px',
-              color: '#111827',
-              background: '#fff',
-              outline: 'none',
-            }}
-          />
-          <button
-            type="submit"
-            style={{
-              height: '42px',
-              paddingInline: '18px',
-              background: '#22c55e',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              fontWeight: 600,
-              fontSize: '15px',
-              cursor: 'pointer',
-            }}
-          >
-            Search
-          </button>
-          {search && (
-            <Link
-              href={buildUrl({ q: undefined, page: undefined })}
-              style={{
-                height: '42px',
-                paddingInline: '14px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                color: '#6b7280',
-                textDecoration: 'none',
-                fontSize: '14px',
-                background: '#fff',
-              }}
-            >
-              Clear ✕
-            </Link>
-          )}
-          <NearMeButton active={nearMe} baseParams={baseParams} />
-        </div>
-      </form>
-
-      {/* Filter bar */}
+      {/* Diet tab bar */}
       <div
         style={{
           display: 'flex',
-          flexWrap: 'wrap',
-          gap: '8px',
-          marginBottom: '32px',
-          alignItems: 'center',
+          borderBottom: '2px solid #e5e7eb',
+          marginBottom: '16px',
+          overflowX: 'auto',
         }}
       >
-        {/* Diet pills */}
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {DIET_OPTIONS.map((opt) => {
-            const active = diet === opt.value;
-            return (
+        {DIET_OPTIONS.map((opt) => {
+          const active = diet === opt.value;
+          return (
+            <Link
+              key={opt.value}
+              href={buildUrl({ diet: opt.value === 'all' ? undefined : opt.value, page: undefined })}
+              style={{
+                padding: '10px 18px',
+                fontWeight: active ? 700 : 500,
+                color: active ? '#16a34a' : '#6b7280',
+                textDecoration: 'none',
+                borderBottom: `2px solid ${active ? '#22c55e' : 'transparent'}`,
+                marginBottom: '-2px',
+                whiteSpace: 'nowrap',
+                fontSize: '15px',
+                transition: 'color 0.15s, border-color 0.15s',
+              }}
+            >
+              {opt.label}
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Collapsible refine panel */}
+      <RefinePanel defaultOpen={refineActiveCount > 0} activeCount={refineActiveCount}>
+        {/* Search + Near Me */}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <form
+            method="GET"
+            action="/restaurants"
+            style={{ display: 'flex', gap: '8px', flex: 1, minWidth: '260px', maxWidth: '520px' }}
+          >
+            {neighborhood && <input type="hidden" name="neighborhood" value={neighborhood} />}
+            {cuisineType && <input type="hidden" name="cuisine" value={cuisineType} />}
+            {diet !== 'all' && <input type="hidden" name="diet" value={diet} />}
+            {userLat != null && <input type="hidden" name="lat" value={String(userLat)} />}
+            {userLng != null && <input type="hidden" name="lng" value={String(userLng)} />}
+            <input
+              type="text"
+              name="q"
+              defaultValue={search ?? ''}
+              placeholder="Search by restaurant name..."
+              style={{
+                flex: 1,
+                height: '42px',
+                border: '1px solid #d1d5db',
+                borderRadius: '8px',
+                paddingInline: '14px',
+                fontSize: '15px',
+                color: '#111827',
+                background: '#fff',
+                outline: 'none',
+              }}
+            />
+            <button
+              type="submit"
+              style={{
+                height: '42px',
+                paddingInline: '18px',
+                background: '#22c55e',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: 600,
+                fontSize: '15px',
+                cursor: 'pointer',
+              }}
+            >
+              Search
+            </button>
+            {search && (
               <Link
-                key={opt.value}
-                href={buildUrl({ diet: opt.value === 'all' ? undefined : opt.value, page: undefined })}
+                href={buildUrl({ q: undefined, page: undefined })}
                 style={{
-                  display: 'inline-block',
-                  padding: '8px 16px',
-                  borderRadius: '20px',
-                  border: '2px solid #22c55e',
-                  background: active ? '#22c55e' : '#ffffff',
-                  color: active ? '#ffffff' : '#16a34a',
+                  height: '42px',
+                  paddingInline: '14px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '8px',
+                  color: '#6b7280',
                   textDecoration: 'none',
-                  fontWeight: 600,
                   fontSize: '14px',
-                  whiteSpace: 'nowrap',
+                  background: '#fff',
                 }}
               >
-                {opt.label}
+                Clear ✕
               </Link>
-            );
-          })}
+            )}
+          </form>
+          <NearMeButton active={nearMe} baseParams={baseParams} />
         </div>
 
+        {/* Cuisine chips */}
         {cuisineTypes.length > 0 && (
-          <>
-            <div style={{ width: '1px', height: '32px', background: '#e5e7eb', margin: '0 4px' }} />
-            {/* Cuisine type pills */}
+          <div>
+            <p
+              style={{
+                margin: '0 0 8px',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: '#9ca3af',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+              }}
+            >
+              Cuisine
+            </p>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <Link
                 href={buildUrl({ cuisine: undefined, page: undefined })}
                 style={{
                   display: 'inline-block',
-                  padding: '8px 16px',
+                  padding: '6px 14px',
                   borderRadius: '20px',
                   border: '2px solid #f59e0b',
                   background: !cuisineType ? '#f59e0b' : '#ffffff',
                   color: !cuisineType ? '#ffffff' : '#b45309',
                   textDecoration: 'none',
                   fontWeight: 600,
-                  fontSize: '14px',
+                  fontSize: '13px',
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -243,14 +257,14 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
                     href={buildUrl({ cuisine: c.type, page: undefined })}
                     style={{
                       display: 'inline-block',
-                      padding: '8px 16px',
+                      padding: '6px 14px',
                       borderRadius: '20px',
                       border: '2px solid #f59e0b',
                       background: active ? '#f59e0b' : '#ffffff',
                       color: active ? '#ffffff' : '#b45309',
                       textDecoration: 'none',
                       fontWeight: 600,
-                      fontSize: '14px',
+                      fontSize: '13px',
                       whiteSpace: 'nowrap',
                     }}
                   >
@@ -259,26 +273,37 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
                 );
               })}
             </div>
-          </>
+          </div>
         )}
 
+        {/* Neighborhood chips */}
         {neighborhoods.length > 0 && (
-          <>
-            <div style={{ width: '1px', height: '32px', background: '#e5e7eb', margin: '0 4px' }} />
-            {/* Neighborhood pills */}
+          <div>
+            <p
+              style={{
+                margin: '0 0 8px',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: '#9ca3af',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+              }}
+            >
+              Neighborhood
+            </p>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <Link
                 href={buildUrl({ neighborhood: undefined, page: undefined })}
                 style={{
                   display: 'inline-block',
-                  padding: '8px 16px',
+                  padding: '6px 14px',
                   borderRadius: '20px',
                   border: '2px solid #6b7280',
                   background: !neighborhood ? '#6b7280' : '#ffffff',
                   color: !neighborhood ? '#ffffff' : '#6b7280',
                   textDecoration: 'none',
                   fontWeight: 600,
-                  fontSize: '14px',
+                  fontSize: '13px',
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -292,14 +317,14 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
                     href={buildUrl({ neighborhood: n, page: undefined })}
                     style={{
                       display: 'inline-block',
-                      padding: '8px 16px',
+                      padding: '6px 14px',
                       borderRadius: '20px',
                       border: '2px solid #6b7280',
                       background: active ? '#6b7280' : '#ffffff',
                       color: active ? '#ffffff' : '#6b7280',
                       textDecoration: 'none',
                       fontWeight: 600,
-                      fontSize: '14px',
+                      fontSize: '13px',
                       whiteSpace: 'nowrap',
                     }}
                   >
@@ -308,9 +333,9 @@ export default async function RestaurantsPage({ searchParams }: PageProps) {
                 );
               })}
             </div>
-          </>
+          </div>
         )}
-      </div>
+      </RefinePanel>
 
       {/* Grid */}
       {restaurants.length === 0 ? (
