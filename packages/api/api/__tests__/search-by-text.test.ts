@@ -70,4 +70,24 @@ describe('search-by-text handler', () => {
     expect(res.body).toHaveLength(1);
     expect(res.body[0].name).toBe('Pizza Place');
   });
+
+  it('returns 405 for GET requests', async () => {
+    const res = mockRes();
+    await handler(mockReq({ method: 'GET' }), res);
+    expect(res.statusCode).toBe(405);
+  });
+
+  it('returns 200 for OPTIONS (CORS preflight)', async () => {
+    const res = mockRes();
+    await handler(mockReq({ method: 'OPTIONS' }), res);
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['Access-Control-Allow-Origin']).toBe('*');
+  });
+
+  it('returns 500 when upstream throws', async () => {
+    mockSearchByText.mockRejectedValueOnce(new Error('Google Places API error: 403'));
+    const res = mockRes();
+    await handler(mockReq(), res);
+    expect(res.statusCode).toBe(500);
+  });
 });

@@ -84,4 +84,11 @@ describe('search-restaurants handler', () => {
     expect(res.body[0].name).toBe('Near');
     expect(res.body[1].name).toBe('Far');
   });
+
+  it('returns 500 when upstream throws', async () => {
+    mockSearchNearbyRestaurants.mockRejectedValueOnce(new Error('Google Places API error: 429'));
+    const res = mockRes();
+    await handler(mockReq(), res);
+    expect(res.statusCode).toBe(500);
+  });
 });
