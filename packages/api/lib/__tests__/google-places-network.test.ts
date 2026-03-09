@@ -90,7 +90,7 @@ describe('searchNearbyRestaurants', () => {
   });
 
   it('throws on API error', async () => {
-    mockFetch.mockResolvedValueOnce({ ok: false, status: 403 });
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 403, text: async () => '' });
     await expect(searchNearbyRestaurants(40.7128, -74.006)).rejects.toThrow(
       'Google Places API error: 403'
     );
