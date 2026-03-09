@@ -2,6 +2,10 @@
 
 A mobile app that helps users identify vegan, vegetarian, and gluten-free options on restaurant menus using AI.
 
+## Demo
+
+https://github.com/user-attachments/assets/a48f920c-9896-41ef-b5fb-a11775c7d838
+
 ## Tech Stack
 
 - **Frontend**: Expo (React Native) with Expo Router — iOS, Android, and web
