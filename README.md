@@ -1,6 +1,6 @@
 # Mealing About
 
-A mobile app that helps users identify vegan, vegetarian, and gluten-free options on restaurant menus using AI.
+A web app that helps users identify vegan, vegetarian, and gluten-free options on restaurant menus using AI.
 
 ## Demo
 
@@ -8,11 +8,11 @@ https://github.com/user-attachments/assets/a48f920c-9896-41ef-b5fb-a11775c7d838
 
 ## Tech Stack
 
-- **Frontend**: Expo (React Native) with Expo Router — iOS, Android, and web
+- **Frontend**: Next.js 15 (React 18, App Router) — TypeScript
 - **Backend**: Vercel serverless functions (TypeScript)
-- **Database**: Supabase (Postgres) — caching parsed menus
-- **AI Providers**: Perplexity (text menu analysis, default), Claude (image-based menu analysis)
-- **APIs**: Google Places (restaurant search)
+- **Database**: Supabase (Postgres) — caching parsed menus and restaurant data
+- **AI Providers**: Perplexity (text menu analysis, default), Claude (image-based menu analysis), Gemini (pipeline analysis)
+- **APIs**: Google Places (restaurant search and discovery)
 - **Monorepo**: pnpm workspaces
 
 ## Quick Start
@@ -21,7 +21,6 @@ https://github.com/user-attachments/assets/a48f920c-9896-41ef-b5fb-a11775c7d838
 
 - **Node.js** >= 18
 - **pnpm** 9+
-- **Expo Go** app on your phone (for mobile testing)
 
 ### 1. Install Node.js (WSL)
 
@@ -58,11 +57,8 @@ Edit `.env` and fill in your API keys (see [Environment Variables](#environment-
 ### 5. Start development
 
 ```bash
-# Start the Expo development server
+# Start the Next.js dev server
 pnpm dev
-
-# Or start web version
-pnpm dev:web
 
 # Start API locally (in a separate terminal)
 cd packages/api && vercel dev
@@ -70,10 +66,6 @@ cd packages/api && vercel dev
 
 ### WSL-Specific Notes
 
-- **Expo on WSL**: The dev server runs in WSL but your phone needs to reach it. If direct connection doesn't work, use tunnel mode:
-  ```bash
-  cd apps/mobile && npx expo start --tunnel
-  ```
 - **Port forwarding**: WSL2 usually auto-forwards ports to Windows. If `localhost` doesn't work from your Windows browser, check your Windows firewall settings.
 - **File watcher performance**: WSL2 has limited inotify support for files on the Windows filesystem (`/mnt/c/`). If hot reload is slow or unreliable, consider cloning the repo inside the WSL filesystem instead (e.g. `~/mealing-about`).
 
@@ -85,11 +77,11 @@ Running the project from `/mnt/c/` (the Windows filesystem) is significantly slo
 cp -r /mnt/c/Users/ukule/PycharmProjects/mealing-about ~/mealing-about
 cd ~/mealing-about
 pnpm install
-pnpm dev:web
+pnpm dev
 ```
 
 You can still access it from Windows:
-- **Browser**: `localhost:8081` works as normal
+- **Browser**: `localhost:3000` works as normal
 - **IDE**: Open the WSL path via `\\wsl$\Ubuntu\home\ukule\mealing-about`
 
 ## Environment Variables
@@ -100,6 +92,7 @@ You can still access it from Windows:
 | `MENU_ANALYZER_PROVIDER` | No | `perplexity` (default) or `anthropic` |
 | `PERPLEXITY_API_KEY` | Yes | Perplexity API key for text menu analysis |
 | `ANTHROPIC_API_KEY` | For images | Claude API key for image-based menu analysis |
+| `GEMINI_API_KEY` | For pipeline | Gemini API key for pipeline menu analysis |
 | `SUPABASE_URL` | Yes | Supabase project URL |
 | `SUPABASE_ANON_KEY` | Yes | Supabase anonymous key (public read) |
 | `SUPABASE_SERVICE_ROLE_KEY` | For auto-save | Supabase service role key — allows the analyze endpoint to write restaurants/menu items to the DB |
@@ -110,27 +103,35 @@ You can still access it from Windows:
 ```
 mealing-about/
 ├── apps/
-│   └── mobile/              # Expo app
-│       ├── app/             # Expo Router screens
-│       │   ├── _layout.tsx  # Root layout
-│       │   ├── index.tsx    # Home screen
-│       │   ├── restaurants.tsx  # Restaurant list
-│       │   └── menu/[placeId].tsx  # Menu detail
-│       ├── components/      # Reusable UI components
-│       ├── hooks/           # Custom hooks (useLocation)
-│       ├── lib/             # API client
-│       └── types/           # Shared TypeScript types
+│   └── web/                 # Next.js 15 web app
+│       ├── app/             # App Router pages
+│       │   ├── page.tsx     # Home/landing page
+│       │   ├── restaurants/ # Restaurant discovery & filtering
+│       │   ├── analyze/     # Menu analysis page
+│       │   └── api/         # API route helpers
+│       └── lib/             # Data fetching, types, Supabase client
 ├── packages/
-│   └── api/                 # Vercel serverless functions
-│       ├── api/             # Endpoints
-│       │   ├── search-restaurants.ts
-│       │   └── analyze-menu.ts
-│       └── lib/             # Backend utilities
-│           ├── google-places.ts
-│           ├── menu-analyzer.ts
-│           ├── perplexity.ts
-│           ├── claude.ts
-│           └── supabase.ts
+│   ├── api/                 # Vercel serverless functions
+│   │   ├── api/             # Endpoints
+│   │   │   ├── search-restaurants.ts
+│   │   │   ├── analyze-menu.ts
+│   │   │   ├── search-by-text.ts
+│   │   │   ├── restaurant.ts
+│   │   │   └── restaurants.ts
+│   │   └── lib/             # Backend utilities
+│   │       ├── google-places.ts
+│   │       ├── menu-analyzer.ts
+│   │       ├── perplexity.ts
+│   │       ├── claude.ts
+│   │       └── supabase.ts
+│   └── pipeline/            # Data ingestion pipeline
+│       └── src/
+│           └── stages/      # 5-stage processing pipeline
+│               ├── 01-discover.ts
+│               ├── 02-enrich.ts
+│               ├── 03-find-menus.ts
+│               ├── 04-extract.ts
+│               └── 05-analyze.ts
 ├── supabase/
 │   └── migrations/          # Database schema
 ├── pnpm-workspace.yaml
@@ -141,15 +142,19 @@ mealing-about/
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/search-restaurants` | POST | Find nearby restaurants via Google Places |
+| `/api/search-restaurants` | POST | Find nearby restaurants via Google Places (coordinates) |
+| `/api/search-by-text` | POST | Text-based restaurant search via Google Places |
+| `/api/restaurants` | POST | List/filter pre-analyzed restaurants from the DB |
+| `/api/restaurant` | POST | Fetch a single restaurant by ID |
 | `/api/analyze-menu` | POST | Analyze menu text (Perplexity) or images (Claude) |
 
 ## Features
 
 - **Location-based restaurant discovery** — auto-detect location, search nearby restaurants
-- **Menu input methods** — photo capture, URL paste, or manual text entry
+- **Text-based search** — search restaurants by name or cuisine
+- **Menu input methods** — URL paste or manual text entry
 - **AI-powered menu analysis** — identifies vegan, vegetarian, and gluten-free options
-- **Smart filtering** — filter results by dietary preference
+- **Smart filtering** — filter results by dietary preference, neighborhood, or cuisine
 - **Uncertainty handling** — flags items to ask your server about
 - **Modification suggestions** — how to make items diet-friendly
 - **Menu caching** — stores analyzed menus for 30 days via Supabase
@@ -157,15 +162,15 @@ mealing-about/
 ## Development
 
 ```bash
-pnpm dev              # Start Expo dev server
-pnpm dev:web          # Start web version
+pnpm dev              # Start Next.js dev server (http://localhost:3000)
 pnpm typecheck        # Type check all packages
 pnpm lint             # Lint all packages
+pnpm test             # Run tests
 ```
 
 ### Data Pipeline
 
-The pipeline pre-populates the database with restaurants and their analyzed menus. It runs four stages in sequence: discover → find menus → extract → analyze.
+The pipeline pre-populates the database with restaurants and their analyzed menus. It runs five stages in sequence: discover → enrich → find menus → extract → analyze.
 
 **Run the full pipeline (all stages):**
 
@@ -176,16 +181,19 @@ pnpm --filter @mealing-about/pipeline run run
 **Run a specific stage in isolation:**
 
 ```bash
-# Stage 1 — Discover restaurants from Google Places (includes website, phone, and dietary flags)
+# Stage 1 — Discover restaurants from Google Places
 pnpm --filter @mealing-about/pipeline run discover
 
-# Stage 2 — Find menu URLs for each restaurant
+# Stage 2 — Enrich restaurants with metadata (website, phone, dietary flags)
+pnpm --filter @mealing-about/pipeline run enrich
+
+# Stage 3 — Find menu URLs for each restaurant
 pnpm --filter @mealing-about/pipeline run find-menus
 
-# Stage 3 — Extract menu text from URLs and PDFs
+# Stage 4 — Extract menu text from URLs and PDFs
 pnpm --filter @mealing-about/pipeline run extract
 
-# Stage 4 — Analyze menus with AI for dietary labels
+# Stage 5 — Analyze menus with AI for dietary labels
 pnpm --filter @mealing-about/pipeline run analyze
 ```
 
@@ -322,14 +330,6 @@ Vercel CLI to invoke itself. The script has been renamed to `start`. Run the API
 
 ```bash
 cd packages/api && vercel dev
-```
-
-### Unable to resolve `@babel/runtime/helpers/interopRequireDefault`
-
-`@babel/runtime` is missing from the mobile package. Install it:
-
-```bash
-pnpm --filter @mealing-about/mobile add @babel/runtime
 ```
 
 ## License

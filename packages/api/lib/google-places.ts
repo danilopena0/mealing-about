@@ -7,11 +7,14 @@ const PLACES_FIELD_MASK = [
   'places.formattedAddress',
   'places.location',
   'places.rating',
+  'places.userRatingCount',
   'places.priceLevel',
   'places.currentOpeningHours.openNow',
   'places.photos',
   'places.primaryType',
   'places.primaryTypeDisplayName',
+  'places.websiteUri',
+  'places.servesVegetarianFood',
 ].join(',');
 
 function placesHeaders(): Record<string, string> {
@@ -38,6 +41,7 @@ interface PlaceResult {
     longitude: number;
   };
   rating?: number;
+  userRatingCount?: number;
   priceLevel?: string;
   currentOpeningHours?: {
     openNow: boolean;
@@ -45,19 +49,26 @@ interface PlaceResult {
   photos?: PlacePhoto[];
   primaryType?: string;
   primaryTypeDisplayName?: { text: string; languageCode: string };
+  websiteUri?: string;
+  servesVegetarianFood?: boolean;
 }
 
 export interface Restaurant {
   placeId: string;
   name: string;
   address: string;
+  latitude?: number;
+  longitude?: number;
   distance?: number;
   rating?: number;
+  userRatingCount?: number;
   priceLevel?: number;
   isOpen?: boolean;
   photoUrl?: string;
   cuisineType?: string;
   cuisineTypeDisplay?: string;
+  websiteUri?: string;
+  servesVegetarianFood?: boolean;
 }
 
 const PRICE_LEVEL_MAP: Record<string, number> = {
@@ -106,7 +117,6 @@ export async function searchNearbyRestaurants(
     method: 'POST',
     headers: placesHeaders(),
     body: JSON.stringify({
-      includedTypes: ['restaurant'],
       locationRestriction: {
         circle: {
           center: { latitude, longitude },
@@ -117,7 +127,8 @@ export async function searchNearbyRestaurants(
   });
 
   if (!response.ok) {
-    throw new Error(`Google Places API error: ${response.status}`);
+    const body = await response.text();
+    throw new Error(`Google Places API error: ${response.status} - ${body}`);
   }
 
   const data = (await response.json()) as { places?: PlaceResult[] };
@@ -127,6 +138,8 @@ export async function searchNearbyRestaurants(
     placeId: place.id,
     name: place.displayName.text,
     address: place.formattedAddress,
+    latitude: place.location.latitude,
+    longitude: place.location.longitude,
     distance: calculateDistance(
       latitude,
       longitude,
@@ -134,11 +147,14 @@ export async function searchNearbyRestaurants(
       place.location.longitude
     ),
     rating: place.rating,
+    userRatingCount: place.userRatingCount,
     priceLevel: priceLevelToNumber(place.priceLevel),
     isOpen: place.currentOpeningHours?.openNow,
     photoUrl: place.photos?.[0] ? getPhotoUrl(place.photos[0].name) : undefined,
     cuisineType: place.primaryType,
     cuisineTypeDisplay: place.primaryTypeDisplayName?.text,
+    websiteUri: place.websiteUri,
+    serveVegetarianFood: place.servesVegetarianFood,
   }));
 }
 

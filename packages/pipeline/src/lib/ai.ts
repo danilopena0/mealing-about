@@ -1,16 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { AnalyzedMenuItem } from '../types.js';
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-// Parse "Please retry in 41.8s" from Gemini 429 error messages
-function parseRetryDelay(message: string): number | null {
-  const match = message.match(/Please retry in (\d+(?:\.\d+)?)s/);
-  return match ? Math.ceil(parseFloat(match[1])) : null;
-}
 
 const ANALYSIS_PROMPT = `You are a dietary menu analyzer. Analyze restaurant menu text and identify ALL menu items with their dietary properties.
 
@@ -118,71 +106,6 @@ async function analyzeWithPerplexity(menuText: string): Promise<AnalyzedMenuItem
   throw lastErr!;
 }
 
-async function analyzeWithGemini(menuText: string): Promise<AnalyzedMenuItem[]> {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
-  const attempt = async (): Promise<AnalyzedMenuItem[]> => {
-    const result = await model.generateContent(
-      `${ANALYSIS_PROMPT}\n\nMenu text:\n${menuText}`,
-    );
-    const text = result.response.text();
-    if (!text) throw new Error('Empty response from Gemini');
-    return extractJsonFromResponse(text);
-  };
-
-  try {
-    return await attempt();
-  } catch (err) {
-    const retryDelay = parseRetryDelay((err as Error).message);
-    if (retryDelay !== null && retryDelay <= 90) {
-      console.log(`  Gemini rate limited — waiting ${retryDelay}s...`);
-      await sleep(retryDelay * 1000);
-      return await attempt();
-    }
-    throw err;
-  }
-}
-
-async function analyzeWithClaude(menuText: string): Promise<AnalyzedMenuItem[]> {
-  const client = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY!,
-    timeout: 30_000,
-  });
-
-  const message = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 4096,
-    messages: [
-      {
-        role: 'user',
-        content: `${ANALYSIS_PROMPT}\n\nMenu text:\n${menuText}`,
-      },
-    ],
-  });
-
-  const content = message.content[0];
-  if (!content || content.type !== 'text') {
-    throw new Error('Empty or unexpected response from Claude');
-  }
-
-  return extractJsonFromResponse(content.text);
-}
-
 export async function analyzeMenuText(menuText: string): Promise<AnalyzedMenuItem[]> {
-  // Try Perplexity first (using existing credits)
-  try {
-    return await analyzeWithPerplexity(menuText);
-  } catch (err) {
-    console.error('  Perplexity failed, trying Gemini:', (err as Error).message);
-  }
-
-  // Fall back to Gemini
-  try {
-    return await analyzeWithGemini(menuText);
-  } catch (err) {
-    throw new Error(
-      `All AI providers failed. Last error: ${(err as Error).message}`,
-    );
-  }
+  return await analyzeWithPerplexity(menuText);
 }
